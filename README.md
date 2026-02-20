@@ -1,4 +1,4 @@
-# Magento-LLM
+# magento-ai-toolkit
 
 A library of LLM-ready skills and agents for Magento 2 / Mage-OS development, debugging, and hosting. Each file is a self-contained system prompt — paste it into any LLM to instantly give it deep Magento expertise.
 
