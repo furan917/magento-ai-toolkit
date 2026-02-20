@@ -231,9 +231,13 @@ cat {module_path}/db_schema.xml 2>/dev/null
 **Check for**:
 - [ ] Primary key constraint exists
 - [ ] Foreign keys follow naming convention: `TABLE_COL_REFTABLE_REFCOL`
+- [ ] Every foreign key column has a corresponding `<index>` (MySQL does not auto-create these)
+- [ ] Columns used in WHERE/ORDER BY/JOIN have indexes — check against any admin grid or collection filters
+- [ ] Composite indexes have the most selective column first
 - [ ] Prices use `decimal` with `precision="12" scale="4"`
 - [ ] `db_schema_whitelist.json` exists alongside (required for column removal)
 - [ ] No `InstallSchema.php` or `UpgradeSchema.php` (deprecated)
+- [ ] FULLTEXT indexes only where genuinely needed for text search (higher write cost than btree)
 
 ---
 

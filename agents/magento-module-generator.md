@@ -247,9 +247,15 @@ ComponentRegistrar::register(
                     referenceTable="catalog_product_entity" referenceColumn="entity_id"
                     onDelete="CASCADE"/>
 
+        <!-- Index every FK column — MySQL does not create these automatically -->
         <index referenceId="{VENDOR}_{ENTITY}_PRODUCT_ID" indexType="btree">
             <column name="product_id"/>
         </index>
+        <!--
+            Add further indexes for any column used in WHERE/ORDER BY/JOIN.
+            For multi-column filters, use a composite index with the most selective column first.
+            For most Magento tables (read-heavy), index cost on writes is outweighed by query gains.
+        -->
     </table>
 </schema>
 ```

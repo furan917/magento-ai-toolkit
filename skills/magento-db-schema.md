@@ -245,6 +245,11 @@ $total  = $result->getTotalCount();
 | Multi-column WHERE clauses | Composite index (most selective column first) |
 | Slow admin grids | Index the filter/sort columns |
 | JOIN on custom table | Always index foreign key columns |
+| ORDER BY on large table | Index the sort column |
+
+**Composite index column order matters**: put the most selective column first. A composite index on `(status, store_id)` is useful when filtering by both; it also satisfies queries filtering on `status` alone but not `store_id` alone.
+
+**Write overhead**: Indexes add overhead to INSERT/UPDATE, but for typical Magento tables (read-heavy, catalogue and order data) this tradeoff is almost always worth it. FK columns and columns used in WHERE/ORDER BY/JOIN should be indexed by default. Be more selective with FULLTEXT indexes (significant write cost) and on genuinely write-heavy tables like queue or log tables.
 
 ```bash
 # Switch all indexers to schedule mode before bulk operations
