@@ -178,8 +178,22 @@ magento-ai-toolkit/
 │   ├── magento-performance-auditor.md
 │   ├── magento-api-builder.md
 │   └── magento-module-generator.md
+├── snippets/                             # Copy-pasteable XML/PHP stubs
+│   ├── di.xml                            # Plugin, preference, type arguments, virtualType
+│   ├── routes.xml                        # Frontend + adminhtml route declarations
+│   ├── acl.xml                           # ACL resource tree skeleton
+│   ├── events.xml                        # Observer registration (shared="false")
+│   ├── db_schema.xml                     # All column types, constraints, indexes
+│   ├── webapi.xml                        # Full CRUD + anonymous + self endpoints
+│   ├── crontab.xml                       # Job + custom group + cron_groups.xml
+│   ├── module.xml                        # Module declaration with sequence
+│   └── registration.php                  # ComponentRegistrar::register()
+├── checklists/                           # Human-run workflow gates
+│   ├── pre-deploy.md                     # 6-section pre-deployment gate
+│   ├── new-module.md                     # 7-phase new module scaffold checklist
+│   └── pr-review.md                      # Blocker/architecture/quality PR review gate
 └── tests/
-    ├── promptfooconfig.yaml              # Root orchestrator (imports all configs)
+    ├── promptfooconfig.yaml              # Root orchestrator (imports all 16 configs)
     ├── providers.yaml                    # Shared: claude-sonnet-4-6 + gpt-4o at temp=0
     ├── defaultTest.yaml                  # Shared: latency cap + non-empty output guard
     ├── prompts/
@@ -188,10 +202,21 @@ magento-ai-toolkit/
     ├── skills/
     │   ├── magento-plugin.yaml           # 5 tests
     │   ├── magento-db-schema.yaml        # 5 tests
-    │   └── magento-debug.yaml            # 5 tests
+    │   ├── magento-debug.yaml            # 5 tests
+    │   ├── magento-observer.yaml         # 5 tests
+    │   ├── magento-deploy.yaml           # 5 tests
+    │   ├── magento-cli-command.yaml      # 5 tests
+    │   ├── magento-test.yaml             # 5 tests
+    │   ├── magento-api.yaml              # 5 tests
+    │   ├── magento-hyva.yaml             # 5 tests
+    │   └── magento-infra.yaml            # 5 tests
     └── agents/
         ├── magento-bug-triage.yaml       # 5 tests
-        └── magento-code-review.yaml      # 5 tests
+        ├── magento-code-review.yaml      # 5 tests
+        ├── magento-deployment.yaml       # 5 tests
+        ├── magento-performance-auditor.yaml # 5 tests
+        ├── magento-api-builder.yaml      # 5 tests
+        └── magento-module-generator.yaml # 5 tests
 ```
 
 ---
@@ -233,9 +258,39 @@ These files were distilled from a comprehensive Magento 2 reference document cov
 
 ---
 
+## Snippets
+
+The `snippets/` directory contains plain XML and PHP stubs — not system prompts. They are copy-pasteable starting points for the most commonly forgotten file structures, with inline comments explaining every attribute.
+
+| File | Contents |
+|------|----------|
+| [`di.xml`](snippets/di.xml) | Plugin, preference, scalar/object/array type arguments, virtualType |
+| [`routes.xml`](snippets/routes.xml) | Frontend (`router id="standard"`) and adminhtml route declarations |
+| [`acl.xml`](snippets/acl.xml) | ACL resource tree nested under `Magento_Backend::admin` |
+| [`events.xml`](snippets/events.xml) | Observer registration with `shared="false"`, common events table |
+| [`db_schema.xml`](snippets/db_schema.xml) | All column types, primary key, FK with naming convention, composite/fulltext indexes |
+| [`webapi.xml`](snippets/webapi.xml) | Full CRUD routes, anonymous endpoint, customer self endpoint, auth examples |
+| [`crontab.xml`](snippets/crontab.xml) | Default + custom group jobs, `cron_groups.xml`, schedule expression reference |
+| [`module.xml`](snippets/module.xml) | Module declaration with sequence dependencies |
+| [`registration.php`](snippets/registration.php) | `ComponentRegistrar::register()` with naming rules |
+
+---
+
+## Checklists
+
+Human-run workflow gates in `checklists/`. Use these at key project milestones — they encode the same rules the skills and agents enforce, in checklist form for engineers to verify manually.
+
+| File | When to use |
+|------|-------------|
+| [`pre-deploy.md`](checklists/pre-deploy.md) | Before every production deployment — 6 sections covering code, DB, config, staging, rollback, window |
+| [`new-module.md`](checklists/new-module.md) | When scaffolding a new module — 7 phases from skeleton to final checks |
+| [`pr-review.md`](checklists/pr-review.md) | When reviewing a PR — blockers, architecture, code quality, tests, migrations |
+
+---
+
 ## Testing
 
-The test suite uses [promptfoo](https://promptfoo.dev) to validate each skill and agent against both Claude and GPT-4o. 25 test cases × 2 providers = ~50 API calls per run.
+The test suite uses [promptfoo](https://promptfoo.dev) to validate all 16 skills and agents against both Claude and GPT-4o. 80 test cases × 2 providers = ~160 API calls per full run.
 
 ### Prerequisites
 
@@ -248,16 +303,34 @@ OPENAI_API_KEY=...    # optional — omit to run single-provider with Claude onl
 ### Run commands
 
 ```bash
-npm test                  # all 25 cases, both providers (~50 API calls)
-npm run test:skills       # skills only
-npm run test:agents       # agents only
-npm run test:plugin       # iterate on one skill during authoring
+# All 80 cases, both providers (~160 API calls)
+npm test
+
+# By category
+npm run test:skills           # all 10 skill configs
+npm run test:agents           # all 6 agent configs
+
+# Per-file (fast iteration during authoring)
+npm run test:plugin
 npm run test:db-schema
 npm run test:debug
+npm run test:observer
+npm run test:deploy
+npm run test:cli-command
+npm run test:test
+npm run test:api
+npm run test:hyva
+npm run test:infra
 npm run test:bug-triage
 npm run test:code-review
-npm run test:ci           # outputs results.json for CI artefacts
-npm run test:view         # open web UI to browse results
+npm run test:deployment
+npm run test:performance
+npm run test:api-builder
+npm run test:module-generator
+
+# CI / reporting
+npm run test:ci               # outputs results-skills.json + results-agents.json
+npm run test:view             # open web UI to browse results
 ```
 
 ### Test design
@@ -273,22 +346,21 @@ Non-negotiable assertions enforced on every test in a config via `defaultTest`:
 
 | Config | Enforced assertion |
 |--------|--------------------|
-| `magento-plugin` | `ObjectManager::getInstance` never appears |
+| `magento-plugin` | `ObjectManager::getInstance` never appears; `declare(strict_types=1)` always present |
 | `magento-db-schema` | `InstallSchema` and `UpgradeSchema` never appear |
+| `magento-debug` | `edit vendor/` never appears |
+| `magento-observer` | `shared="true"` never appears; `ObjectManager::getInstance` never appears |
+| `magento-deploy` | `rm -rf generated` never appears; `setup:di:compile` never appears (build phase only) |
+| `magento-cli-command` | `declare(strict_types=1)` always present; `ObjectManager::getInstance` never appears |
+| `magento-test` | `ObjectManager::getInstance` never appears |
+| `magento-api` | `ObjectManager::getInstance` never appears |
+| `magento-hyva` | `ko.observable`, `jQuery`, `require(` never appear |
 | `magento-bug-triage` | `## Bug Triage Report` always present |
 | `magento-code-review` | `## Code Review Report` always present |
-
-### Adding tests for the remaining 11 files
-
-Follow the same 5-test shape used in the existing configs:
-
-1. Happy path — assert core structural markers
-2. Type-reference edge case (the rule easiest to get wrong)
-3. Multi-artefact output — assert all pieces present
-4. Anti-pattern avoidance — `not-contains` for the deprecated approach
-5. Command sequence — assert the documented follow-up commands appear
-
-Then add the new file to `tests/promptfooconfig.yaml` under `import:`.
+| `magento-deployment` | `## Deployment Report` always present; `rm -rf generated` never appears |
+| `magento-performance-auditor` | `## Performance Audit Report` always present |
+| `magento-api-builder` | `## API Builder` always present; `ObjectManager::getInstance` never appears |
+| `magento-module-generator` | `InstallSchema`, `UpgradeSchema`, `ObjectManager::getInstance` never appear |
 
 ---
 

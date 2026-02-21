@@ -1,0 +1,111 @@
+description: "Tests for skills/magento-test.md"
+
+prompts:
+  - file://../prompts/skill-wrapper.json
+
+providers:
+  - id: anthropic:messages:claude-sonnet-4-6
+    config:
+      temperature: 0
+      max_tokens: 2048
+  - id: openai:gpt-4o
+    config:
+      temperature: 0
+      max_tokens: 2048
+
+defaultTest:
+  vars:
+    system_prompt: "file://../../skills/magento-test.md"
+  assert:
+    - type: latency
+      threshold: 30000
+    - type: javascript
+      value: "output.trim().length > 50"
+    - type: not-contains
+      value: "ObjectManager::getInstance"
+
+tests:
+  - description: "Unit test has correct structure: TestCase, setUp, mock, assert"
+    vars:
+      user_input: |
+        Write a unit test for a service class `ProductPriceCalculator` that has a method
+        `calculate(Product $product, float $qty): float`. It depends on a
+        `TaxCalculatorInterface` injected via constructor.
+    assert:
+      - type: contains
+        value: "TestCase"
+      - type: contains
+        value: "setUp"
+      - type: contains
+        value: "createMock"
+      - type: contains
+        value: "declare(strict_types=1)"
+      - type: llm-rubric
+        value: |
+          The test class must extend PHPUnit\Framework\TestCase, have a setUp() method
+          that creates a mock of TaxCalculatorInterface and instantiates the class under
+          test, and have at least one test method that calls calculate() and asserts the
+          return value. The mock must use createMock() or getMockBuilder().
+
+  - description: "getMockBuilder used with disableOriginalConstructor for concrete classes"
+    vars:
+      user_input: |
+        I need to mock `Magento\Catalog\Model\Product` in my unit test, but calling
+        createMock() triggers the constructor which needs database access. How do I fix this?
+    assert:
+      - type: contains
+        value: "getMockBuilder"
+      - type: contains
+        value: "disableOriginalConstructor"
+      - type: llm-rubric
+        value: |
+          The response must show using getMockBuilder(Product::class)->disableOriginalConstructor()->getMock()
+          to prevent the real constructor from running. It must explain that createMock()
+          calls disableOriginalConstructor() automatically for interfaces but getMockBuilder()
+          gives explicit control for concrete classes with complex constructors.
+
+  - description: "Integration test uses @magentoDataFixture and @magentoDbIsolation"
+    vars:
+      user_input: |
+        Write an integration test that creates a product, saves it, then retrieves it
+        by SKU and asserts the price is correct.
+    assert:
+      - type: contains
+        value: "@magentoDataFixture"
+      - type: contains
+        value: "Bootstrap::getObjectManager"
+      - type: llm-rubric
+        value: |
+          The integration test must use Bootstrap::getObjectManager() to get the real
+          object manager (this is valid in integration tests), must have @magentoDataFixture
+          annotation or equivalent fixture loading, and should include @magentoDbIsolation
+          enabled to rollback after the test. It must NOT use createMock() to fake the
+          ProductRepository — integration tests use real implementations.
+
+  - description: "Private methods are not tested directly"
+    vars:
+      user_input: |
+        How do I test a private method `calculateDiscount()` in my service class?
+    assert:
+      - type: llm-rubric
+        value: |
+          The response must NOT recommend using Reflection to access and directly test
+          the private method. It must explain that private methods should be tested
+          indirectly through the public API that calls them, and that if a private
+          method is complex enough to need direct testing it is a signal it should be
+          extracted to a separate class.
+
+  - description: "Correct phpunit command paths for unit vs integration tests"
+    vars:
+      user_input: |
+        How do I run my unit tests and integration tests for Magento?
+    assert:
+      - type: contains
+        value: "vendor/bin/phpunit"
+      - type: llm-rubric
+        value: |
+          The response must show separate commands for unit tests (using the unit phpunit
+          config, e.g. dev/tests/unit/phpunit.xml.dist or similar) and integration tests
+          (dev/tests/integration/phpunit.xml.dist). It must mention that integration tests
+          require a database connection and separate configuration. The paths to the config
+          files must point inside the dev/tests/ directory structure.

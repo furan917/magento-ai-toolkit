@@ -1,0 +1,114 @@
+description: "Tests for agents/magento-api-builder.md"
+
+prompts:
+  - file://../prompts/agent-wrapper.json
+
+providers:
+  - id: anthropic:messages:claude-sonnet-4-6
+    config:
+      temperature: 0
+      max_tokens: 2048
+  - id: openai:gpt-4o
+    config:
+      temperature: 0
+      max_tokens: 2048
+
+defaultTest:
+  vars:
+    system_prompt: "file://../../agents/magento-api-builder.md"
+  assert:
+    - type: latency
+      threshold: 30000
+    - type: javascript
+      value: "output.trim().length > 50"
+    - type: contains
+      value: "## API Builder"
+    - type: not-contains
+      value: "ObjectManager::getInstance"
+
+tests:
+  - description: "Complete file set generated for a REST endpoint"
+    vars:
+      user_input: |
+        Build a REST API for a Loyalty Points module. Customers can GET their points
+        balance at /V1/vendor/loyalty/mine and admins can POST to adjust balances at
+        /V1/vendor/loyalty/:customerId.
+    assert:
+      - type: contains
+        value: "webapi.xml"
+      - type: contains
+        value: "Api\\"
+      - type: contains
+        value: "di.xml"
+      - type: llm-rubric
+        value: |
+          The output must include all required files: webapi.xml with the two routes,
+          an Api/ interface (e.g. LoyaltyRepositoryInterface), a Model implementation,
+          and di.xml preference mapping interface to implementation. The self/anonymous
+          resource should be used for customer-facing endpoints and an ACL resource for
+          admin endpoints. A file manifest must list every generated file.
+
+  - description: "Agent asks clarification on ambiguous authentication scope"
+    vars:
+      user_input: |
+        Create a REST API endpoint for product reviews.
+    assert:
+      - type: llm-rubric
+        value: |
+          The request is ambiguous about authentication: should customers create reviews
+          (authenticated customer endpoint using 'self'), should it be public (anonymous),
+          or admin-only? The agent must ask at least one clarifying question about the
+          authentication scope before generating files. It must NOT assume and generate
+          without confirming with the user.
+
+  - description: "Generated file manifest is present in output"
+    vars:
+      user_input: |
+        Build a complete REST CRUD API for a Subscription entity: create, read, list,
+        update, and delete. The entity has id, customer_id, plan_name, and expires_at fields.
+    assert:
+      - type: contains
+        value: "webapi.xml"
+      - type: contains
+        value: "db_schema.xml"
+      - type: llm-rubric
+        value: |
+          The output must include an explicit file manifest section that lists every
+          file being generated with its path. For a CRUD entity, this must include at
+          minimum: Api/SubscriptionInterface.php, Api/SubscriptionRepositoryInterface.php,
+          Model/Subscription.php, Model/ResourceModel/Subscription.php,
+          Model/ResourceModel/Subscription/Collection.php, db_schema.xml, webapi.xml,
+          di.xml. Missing any of these means the CRUD API will not function.
+
+  - description: "SearchCriteria with list endpoint includes companion example"
+    vars:
+      user_input: |
+        Add a GET list endpoint for subscriptions with filtering support.
+    assert:
+      - type: contains
+        value: "SearchCriteriaInterface"
+      - type: llm-rubric
+        value: |
+          For the list endpoint, the response must show: the interface method accepting
+          SearchCriteriaInterface, the SearchResultsInterface return type, and a concrete
+          example of how to call the endpoint with searchCriteria query parameters (filter
+          by field, page_size, current_page). This companion usage example is required
+          to make the endpoint usable.
+
+  - description: "GraphQL resolver branch includes schema.graphqls and resolver class"
+    vars:
+      user_input: |
+        Build a GraphQL API for the Subscription entity instead of REST. I need a query
+        to get a subscription by ID and a mutation to cancel it.
+    assert:
+      - type: contains
+        value: "schema.graphqls"
+      - type: contains
+        value: "ResolverInterface"
+      - type: llm-rubric
+        value: |
+          The response must include schema.graphqls with the Query and Mutation type
+          definitions, two resolver classes (one for get, one for cancel mutation),
+          and the di.xml type configuration declaring the resolvers. The mutation resolver
+          must handle input validation and return a typed response object (not raw boolean).
+          The resolvers must implement Magento\Framework\GraphQl\Query\ResolverInterface.
