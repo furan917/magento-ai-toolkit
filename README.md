@@ -159,6 +159,7 @@ Process manager: supervisor
 ```
 magento-ai-toolkit/
 ├── README.md
+├── package.json
 ├── skills/
 │   ├── magento-debug.md
 │   ├── magento-deploy.md
@@ -170,13 +171,27 @@ magento-ai-toolkit/
 │   ├── magento-api.md
 │   ├── magento-hyva.md
 │   └── magento-infra.md
-└── agents/
-    ├── magento-bug-triage.md
-    ├── magento-deployment.md
-    ├── magento-code-review.md
-    ├── magento-performance-auditor.md
-    ├── magento-api-builder.md
-    └── magento-module-generator.md
+├── agents/
+│   ├── magento-bug-triage.md
+│   ├── magento-deployment.md
+│   ├── magento-code-review.md
+│   ├── magento-performance-auditor.md
+│   ├── magento-api-builder.md
+│   └── magento-module-generator.md
+└── tests/
+    ├── promptfooconfig.yaml              # Root orchestrator (imports all configs)
+    ├── providers.yaml                    # Shared: claude-sonnet-4-6 + gpt-4o at temp=0
+    ├── defaultTest.yaml                  # Shared: latency cap + non-empty output guard
+    ├── prompts/
+    │   ├── skill-wrapper.json            # {system, user} message array for skills
+    │   └── agent-wrapper.json            # Identical shape, separate for future divergence
+    ├── skills/
+    │   ├── magento-plugin.yaml           # 5 tests
+    │   ├── magento-db-schema.yaml        # 5 tests
+    │   └── magento-debug.yaml            # 5 tests
+    └── agents/
+        ├── magento-bug-triage.yaml       # 5 tests
+        └── magento-code-review.yaml      # 5 tests
 ```
 
 ---
@@ -215,6 +230,65 @@ These files were distilled from a comprehensive Magento 2 reference document cov
 | MySQL | 8.0+ / MariaDB 10.6+ |
 | Redis | 7.0+ |
 | Composer | 2.x |
+
+---
+
+## Testing
+
+The test suite uses [promptfoo](https://promptfoo.dev) to validate each skill and agent against both Claude and GPT-4o. 25 test cases × 2 providers = ~50 API calls per run.
+
+### Prerequisites
+
+```bash
+node >= 18
+ANTHROPIC_API_KEY=...
+OPENAI_API_KEY=...    # optional — omit to run single-provider with Claude only
+```
+
+### Run commands
+
+```bash
+npm test                  # all 25 cases, both providers (~50 API calls)
+npm run test:skills       # skills only
+npm run test:agents       # agents only
+npm run test:plugin       # iterate on one skill during authoring
+npm run test:db-schema
+npm run test:debug
+npm run test:bug-triage
+npm run test:code-review
+npm run test:ci           # outputs results.json for CI artefacts
+npm run test:view         # open web UI to browse results
+```
+
+### Test design
+
+Each sub-config (`tests/skills/*.yaml`, `tests/agents/*.yaml`) is fully self-contained and loads the corresponding `.md` file as the system prompt via `file://`.
+
+Two assertion types per test case:
+
+- **Deterministic** (`contains`, `not-contains`, `regex`) — structural markers explicitly required by the skill. No extra API calls.
+- **LLM-as-judge** (`llm-rubric`) — behavioural correctness: did it follow the workflow, avoid the anti-pattern? One extra API call per assertion.
+
+Non-negotiable assertions enforced on every test in a config via `defaultTest`:
+
+| Config | Enforced assertion |
+|--------|--------------------|
+| `magento-plugin` | `ObjectManager::getInstance` never appears |
+| `magento-db-schema` | `InstallSchema` and `UpgradeSchema` never appear |
+| `magento-bug-triage` | `## Bug Triage Report` always present |
+| `magento-code-review` | `## Code Review Report` always present |
+
+### Adding tests for the remaining 11 files
+
+Follow the same 5-test shape used in the existing configs:
+
+1. Happy path — assert core structural markers
+2. Type-reference edge case (the rule easiest to get wrong)
+3. Multi-artefact output — assert all pieces present
+4. Anti-pattern avoidance — `not-contains` for the deprecated approach
+5. Command sequence — assert the documented follow-up commands appear
+
+Then add the new file to `tests/promptfooconfig.yaml` under `import:`.
 
 ---
 

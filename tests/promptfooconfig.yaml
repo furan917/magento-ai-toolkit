@@ -1,0 +1,10 @@
+description: Magento AI Toolkit — full test suite
+
+# Imports all per-file configs. Each is self-contained with its own prompts,
+# providers, and defaultTest. Add new skill/agent YAMLs here as they are created.
+import:
+  - ./skills/magento-plugin.yaml
+  - ./skills/magento-db-schema.yaml
+  - ./skills/magento-debug.yaml
+  - ./agents/magento-bug-triage.yaml
+  - ./agents/magento-code-review.yaml

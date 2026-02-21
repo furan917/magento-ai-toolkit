@@ -1,0 +1,21 @@
+{
+  "name": "magento-ai-toolkit-tests",
+  "version": "1.0.0",
+  "description": "Promptfoo test suite for magento-ai-toolkit skills and agents",
+  "private": true,
+  "scripts": {
+    "test": "npx promptfoo@latest eval --config tests/promptfooconfig.yaml",
+    "test:skills": "npx promptfoo@latest eval --config tests/skills/magento-plugin.yaml --config tests/skills/magento-db-schema.yaml --config tests/skills/magento-debug.yaml",
+    "test:agents": "npx promptfoo@latest eval --config tests/agents/magento-bug-triage.yaml --config tests/agents/magento-code-review.yaml",
+    "test:plugin": "npx promptfoo@latest eval --config tests/skills/magento-plugin.yaml",
+    "test:db-schema": "npx promptfoo@latest eval --config tests/skills/magento-db-schema.yaml",
+    "test:debug": "npx promptfoo@latest eval --config tests/skills/magento-debug.yaml",
+    "test:bug-triage": "npx promptfoo@latest eval --config tests/agents/magento-bug-triage.yaml",
+    "test:code-review": "npx promptfoo@latest eval --config tests/agents/magento-code-review.yaml",
+    "test:ci": "npx promptfoo@latest eval --config tests/promptfooconfig.yaml --output results.json",
+    "test:view": "npx promptfoo@latest view"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
