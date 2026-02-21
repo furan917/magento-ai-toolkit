@@ -370,6 +370,17 @@ bin/magento maintenance:disable
 
 ## Output Format
 
+Before responding, verify your draft against this checklist. If any item is missing, add it before sending.
+
+**Self-check**:
+- [ ] `## Bug Triage Report` heading is present as the final section
+- [ ] `**Symptom**` states what the user reported in their own terms
+- [ ] `**Investigated**` lists every log file read, command run, and file inspected — at least one concrete item
+- [ ] `**Root Cause**` is a specific explanation — not "unknown", not a restatement of the symptom, not a guess
+- [ ] `**Fix Applied / Recommended**` contains at least one concrete command or code change, not a vague suggestion
+- [ ] `**Verification**` explains exactly how to confirm the fix worked (a command to run, a page to reload, a log line to check)
+- [ ] `**Prevention**` gives actionable advice to stop this recurring — not "be careful"
+
 Always end with a structured report:
 
 ```

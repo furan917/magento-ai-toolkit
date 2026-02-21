@@ -65,13 +65,20 @@ Optional:    Observer on product_save_after, Unit tests
 
 ## Clarification Step
 
-Confirm these before generating if not clear:
+**Stop before generating any files.** Read the user's description and identify every item below that is missing or ambiguous. If anything is unclear, ask all your questions in a single message — do not generate files first and ask later, and do not invent or assume values for missing items.
 
-1. **Vendor and Module name** — `Vendor_Module` format
-2. **Entity name(s)** — what are the main data objects?
-3. **Fields** — name, type, nullable, default for each
-4. **Magento dependencies** — which core modules does this interact with? (Catalog, Sales, Customer, etc.)
-5. **Features wanted**:
+Ask only about what is genuinely unclear. If the user has already provided a value, do not ask for it again.
+
+**Required — do not assume if missing:**
+
+1. **Vendor and Module name** — must be `Vendor_Module` format. If only a concept is given ("a wishlist module"), ask what vendor/module name they want.
+2. **Entity name(s)** — the main data object(s) the module manages. Must be concrete (e.g. `ProductNote`, `StoreLocator`) — do not invent one from the description.
+3. **Fields** — for each entity: field name, data type (`int`, `varchar`, `text`, `decimal`, `boolean`, `timestamp`), nullable or not, and default value if any. Do not add fields that were not specified.
+4. **Magento dependencies** — which core modules does this touch? (Catalog, Sales, Customer, Quote, etc.) Needed to populate `<sequence>` in `module.xml` and foreign key references in `db_schema.xml`.
+
+**Required — confirm the feature scope:**
+
+5. **Features wanted** — go through each and confirm yes or no. Do not generate a feature that was not confirmed. Do not omit a feature the user asked for.
    - [ ] REST API
    - [ ] GraphQL API
    - [ ] Admin grid (list page)
@@ -80,11 +87,26 @@ Confirm these before generating if not clear:
    - [ ] Hyvä template (Alpine.js)
    - [ ] CLI command
    - [ ] Cron job
-   - [ ] Observer/event
-   - [ ] Plugin
+   - [ ] Observer/event (which event?)
+   - [ ] Plugin (which class and method?)
    - [ ] Message queue consumer
    - [ ] Unit tests
-6. **Target path** — `app/code/Vendor/Module/` (default)
+
+**Optional — sensible defaults if not mentioned:**
+
+6. **Target path** — default is `app/code/{Vendor}/{Module}/`. Ask only if the user has a non-standard layout.
+7. **Magento version constraint** — default is `>=2.4.8`. Ask only if the user mentions compatibility requirements.
+
+**Example clarification message format:**
+
+> Before I generate the files, I have a few questions:
+>
+> 1. What should the Vendor and Module name be? (e.g. `Acme_ProductNotes`)
+> 2. You mentioned "notes" — should the entity be called `Note`? And do you need any fields beyond `product_id`, `content`, and `created_at`?
+> 3. Should I include unit tests?
+> 4. Do you want a frontend component, or is this admin-only?
+
+Once all required items are confirmed, proceed to Generation Plan.
 
 ---
 

@@ -311,6 +311,18 @@ Use these standard finding descriptions:
 
 ## Output Format
 
+Before responding, verify your draft against this checklist. If any item is missing or wrong, fix it before sending.
+
+**Self-check**:
+- [ ] `## Code Review Report` heading is present
+- [ ] Module, Path, and Reviewed fields are filled in with real values — not placeholders
+- [ ] Summary table has all four severity rows with actual counts, not "X"
+- [ ] The count in the Summary table matches the number of findings listed in the Findings section exactly — recount if unsure
+- [ ] Every finding entry has: MAG code, severity emoji, finding name, File with line number, Code block showing the problem, Why explanation, and Fix with corrected code
+- [ ] Passed Checks section is present — list what was clean; if nothing passed, state that explicitly rather than omitting the section
+- [ ] Recommendations section is present with at least one prioritised action
+- [ ] No findings are invented — every MAG code raised must correspond to code that was actually in the input
+
 ```
 ## Code Review Report
 **Module**: Vendor_Module
