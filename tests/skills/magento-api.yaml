@@ -7,18 +7,9 @@ prompts:
   - file://../prompts/skill-wrapper.json
 
 providers:
-  - id: anthropic:messages:claude-sonnet-4-6
-    config:
-      temperature: 0
-      max_tokens: 2048
-  - id: openai:gpt-4o
-    config:
-      temperature: 0
-      max_tokens: 2048
+  - file://../providers.yaml
 
 defaultTest:
-  vars:
-    system_prompt: "file://../../skills/magento-api.md"
   assert:
     - type: latency
       threshold: 30000
@@ -30,6 +21,7 @@ defaultTest:
 tests:
   - description: "webapi.xml references Api/ interface, not Model directly"
     vars:
+      system_prompt: "file://../../skills/magento-api.md"
       user_input: |
         Create a REST endpoint GET /V1/vendor/widgets/:id that returns a widget by ID.
     assert:
@@ -48,6 +40,7 @@ tests:
 
   - description: "SearchCriteria used for list endpoints, not raw collection"
     vars:
+      system_prompt: "file://../../skills/magento-api.md"
       user_input: |
         I need a REST API endpoint that lists widgets with filtering by status and
         pagination support.
@@ -65,6 +58,7 @@ tests:
 
   - description: "GraphQL resolver returns array with model key, not object"
     vars:
+      system_prompt: "file://../../skills/magento-api.md"
       user_input: |
         Add a GraphQL query `widget(id: Int!): Widget` to my module.
     assert:
@@ -82,6 +76,7 @@ tests:
 
   - description: "Api/ interface PHPDoc is mandatory for REST serialisation"
     vars:
+      system_prompt: "file://../../skills/magento-api.md"
       user_input: |
         Create the service contract interface for my WidgetRepository.
     assert:
@@ -100,6 +95,7 @@ tests:
 
   - description: "Bearer token authentication flow explained correctly"
     vars:
+      system_prompt: "file://../../skills/magento-api.md"
       user_input: |
         How do I authenticate with the Magento REST API from a third-party system?
     assert:

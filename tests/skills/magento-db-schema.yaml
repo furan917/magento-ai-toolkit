@@ -7,14 +7,7 @@ prompts:
   - file://../prompts/skill-wrapper.json
 
 providers:
-  - id: anthropic:messages:claude-sonnet-4-6
-    config:
-      temperature: 0
-      max_tokens: 2048
-  - id: openai:gpt-4o
-    config:
-      temperature: 0
-      max_tokens: 2048
+  - file://../providers.yaml
 
 defaultTest:
   assert:
@@ -27,12 +20,11 @@ defaultTest:
       value: "InstallSchema"
     - type: not-contains
       value: "UpgradeSchema"
-  vars:
-    system_prompt: "file://../../skills/magento-db-schema.md"
 
 tests:
   - description: "Schema XML has correct root, primary key constraint, identity column, and CURRENT_TIMESTAMP timestamps"
     vars:
+      system_prompt: "file://../../skills/magento-db-schema.md"
       user_input: >
         Create a db_schema.xml for a table called vendor_wishlist with columns:
         entity_id (primary key, auto-increment), name (varchar 255, not null),
@@ -58,6 +50,7 @@ tests:
 
   - description: "Price columns use decimal precision=12 scale=4, never float"
     vars:
+      system_prompt: "file://../../skills/magento-db-schema.md"
       user_input: >
         Add a price column and a discount_amount column to my db_schema.xml table.
         Both store monetary values.
@@ -79,6 +72,7 @@ tests:
 
   - description: "Foreign key column also has a matching index element"
     vars:
+      system_prompt: "file://../../skills/magento-db-schema.md"
       user_input: >
         Add a store_id foreign key column to my vendor_entity table in db_schema.xml.
         It should reference the store table's store_id column with CASCADE on delete.
@@ -98,6 +92,7 @@ tests:
 
   - description: "Model, ResourceModel, and Collection triad are always generated together"
     vars:
+      system_prompt: "file://../../skills/magento-db-schema.md"
       user_input: >
         Create the full Model, ResourceModel, and Collection PHP classes for a
         vendor_wishlist table with entity_id as the primary key.
@@ -119,6 +114,7 @@ tests:
 
   - description: "Whitelist generation and setup:upgrade commands always follow schema changes"
     vars:
+      system_prompt: "file://../../skills/magento-db-schema.md"
       user_input: >
         I just modified my db_schema.xml to add a new column. What commands do I
         need to run to apply the changes?

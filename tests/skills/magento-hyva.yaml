@@ -7,18 +7,9 @@ prompts:
   - file://../prompts/skill-wrapper.json
 
 providers:
-  - id: anthropic:messages:claude-sonnet-4-6
-    config:
-      temperature: 0
-      max_tokens: 2048
-  - id: openai:gpt-4o
-    config:
-      temperature: 0
-      max_tokens: 2048
+  - file://../providers.yaml
 
 defaultTest:
-  vars:
-    system_prompt: "file://../../skills/magento-hyva.md"
   assert:
     - type: latency
       threshold: 30000
@@ -34,6 +25,7 @@ defaultTest:
 tests:
   - description: "Alpine.js x-data component used instead of KnockoutJS"
     vars:
+      system_prompt: "file://../../skills/magento-hyva.md"
       user_input: |
         Create a Hyva product quantity selector that increments and decrements a count,
         with a minimum of 1 and maximum from the product's stock.
@@ -52,6 +44,7 @@ tests:
 
   - description: "ViewModel implements ArgumentInterface for Hyva templates"
     vars:
+      system_prompt: "file://../../skills/magento-hyva.md"
       user_input: |
         I need a ViewModel to pass formatted product price data to a Hyva .phtml template.
     assert:
@@ -68,6 +61,7 @@ tests:
 
   - description: "GraphQL fetch used for dynamic data in Hyva, with Alpine state"
     vars:
+      system_prompt: "file://../../skills/magento-hyva.md"
       user_input: |
         In a Hyva theme, fetch the current customer's wishlist items via GraphQL
         and display them in an Alpine component.
@@ -86,6 +80,7 @@ tests:
 
   - description: "Output escaped with $escaper in Hyva templates"
     vars:
+      system_prompt: "file://../../skills/magento-hyva.md"
       user_input: |
         Display a product's name and description in a Hyva .phtml template. The description
         can contain HTML.
@@ -101,6 +96,7 @@ tests:
 
   - description: "Tailwind content paths updated for custom Hyva templates"
     vars:
+      system_prompt: "file://../../skills/magento-hyva.md"
       user_input: |
         I've added a new custom module with Hyva .phtml templates in
         app/code/Vendor/Module/view/frontend/templates/. My Tailwind classes aren't

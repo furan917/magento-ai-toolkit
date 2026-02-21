@@ -7,18 +7,9 @@ prompts:
   - file://../prompts/agent-wrapper.json
 
 providers:
-  - id: anthropic:messages:claude-sonnet-4-6
-    config:
-      temperature: 0
-      max_tokens: 2048
-  - id: openai:gpt-4o
-    config:
-      temperature: 0
-      max_tokens: 2048
+  - file://../providers.yaml
 
 defaultTest:
-  vars:
-    system_prompt: "file://../../agents/magento-module-generator.md"
   assert:
     - type: latency
       threshold: 30000
@@ -34,6 +25,7 @@ defaultTest:
 tests:
   - description: "Vague input triggers clarifying questions, not file generation"
     vars:
+      system_prompt: "file://../../agents/magento-module-generator.md"
       user_input: |
         Create a Magento module for managing subscriptions.
     assert:
@@ -51,6 +43,7 @@ tests:
 
   - description: "Complete spec generates all Phase 1 and Phase 2 files"
     vars:
+      system_prompt: "file://../../agents/magento-module-generator.md"
       user_input: |
         Generate a Magento module with these specs:
         - Vendor: Acme, Module: Subscription
@@ -80,6 +73,7 @@ tests:
 
   - description: "Only confirmed features are generated"
     vars:
+      system_prompt: "file://../../agents/magento-module-generator.md"
       user_input: |
         Generate a module: Vendor=Demo, Module=Logger.
         Features needed: ONLY a custom logger (Monolog handler). Nothing else.
@@ -99,6 +93,7 @@ tests:
 
   - description: "Generated PHP code uses constructor injection, not anti-patterns"
     vars:
+      system_prompt: "file://../../agents/magento-module-generator.md"
       user_input: |
         Generate a complete Magento module: Vendor=Test, Module=Example.
         Entity: Product attribute (varchar, scope=store).
@@ -116,6 +111,7 @@ tests:
 
   - description: "Report completeness: file manifest and install commands present"
     vars:
+      system_prompt: "file://../../agents/magento-module-generator.md"
       user_input: |
         Generate a minimal module: Vendor=Foo, Module=Bar. No features beyond the
         bare minimum to register and enable the module.

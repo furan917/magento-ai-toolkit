@@ -7,18 +7,9 @@ prompts:
   - file://../prompts/agent-wrapper.json
 
 providers:
-  - id: anthropic:messages:claude-sonnet-4-6
-    config:
-      temperature: 0
-      max_tokens: 2048
-  - id: openai:gpt-4o
-    config:
-      temperature: 0
-      max_tokens: 2048
+  - file://../providers.yaml
 
 defaultTest:
-  vars:
-    system_prompt: "file://../../agents/magento-api-builder.md"
   assert:
     - type: latency
       threshold: 30000
@@ -32,6 +23,7 @@ defaultTest:
 tests:
   - description: "Complete file set generated for a REST endpoint"
     vars:
+      system_prompt: "file://../../agents/magento-api-builder.md"
       user_input: |
         Build a REST API for a Loyalty Points module. Customers can GET their points
         balance at /V1/vendor/loyalty/mine and admins can POST to adjust balances at
@@ -53,6 +45,7 @@ tests:
 
   - description: "Agent asks clarification on ambiguous authentication scope"
     vars:
+      system_prompt: "file://../../agents/magento-api-builder.md"
       user_input: |
         Create a REST API endpoint for product reviews.
     assert:
@@ -66,6 +59,7 @@ tests:
 
   - description: "Generated file manifest is present in output"
     vars:
+      system_prompt: "file://../../agents/magento-api-builder.md"
       user_input: |
         Build a complete REST CRUD API for a Subscription entity: create, read, list,
         update, and delete. The entity has id, customer_id, plan_name, and expires_at fields.
@@ -85,6 +79,7 @@ tests:
 
   - description: "SearchCriteria with list endpoint includes companion example"
     vars:
+      system_prompt: "file://../../agents/magento-api-builder.md"
       user_input: |
         Add a GET list endpoint for subscriptions with filtering support.
     assert:
@@ -100,6 +95,7 @@ tests:
 
   - description: "GraphQL resolver branch includes schema.graphqls and resolver class"
     vars:
+      system_prompt: "file://../../agents/magento-api-builder.md"
       user_input: |
         Build a GraphQL API for the Subscription entity instead of REST. I need a query
         to get a subscription by ID and a mutation to cancel it.

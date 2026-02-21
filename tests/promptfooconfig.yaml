@@ -36,6 +36,3 @@
 
 description: Magento AI Toolkit — shared test defaults
 
-evaluateOptions:
-  maxConcurrency: 2   # max concurrent in-flight API calls
-  delay: 1000         # ms between dispatching each new request
