@@ -1,3 +1,6 @@
+import:
+  - ../promptfooconfig.yaml
+
 description: Tests for agents/magento-code-review.md
 
 prompts:

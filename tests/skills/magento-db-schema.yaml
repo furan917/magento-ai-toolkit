@@ -1,3 +1,6 @@
+import:
+  - ../promptfooconfig.yaml
+
 description: Tests for skills/magento-db-schema.md
 
 prompts:
