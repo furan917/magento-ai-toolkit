@@ -84,7 +84,7 @@ tests:
         value: "edit vendor/"
       # Must suggest the correct extensibility mechanisms
       - type: regex
-        value: "(?i)plugin|preference|observer"
+        value: "plugin|preference|observer"
       - type: llm-rubric
         value: >
           The agent explicitly refuses to modify vendor/ files and instead recommends
@@ -121,7 +121,7 @@ tests:
         value: "**Prevention**"
       # crontab verification is part of the fix workflow
       - type: regex
-        value: "(?i)crontab|cron"
+        value: "crontab|cron"
       - type: llm-rubric
         value: >
           The Bug Triage Report recommends running bin/magento cron:install to set up

@@ -119,7 +119,7 @@ tests:
         value: "indexer:reindex"
       # OpenSearch (or Elasticsearch) is the search engine in Magento 2.4+
       - type: regex
-        value: "(?i)OpenSearch|Elasticsearch"
+        value: "OpenSearch|Elasticsearch"
       - type: llm-rubric
         value: >
           The response recommends reindexing the catalogsearch_fulltext indexer and

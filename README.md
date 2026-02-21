@@ -331,6 +331,10 @@ npm run test:module-generator
 # CI / reporting
 npm run test:ci               # outputs results-skills.json + results-agents.json
 npm run test:view             # open web UI to browse results
+
+# Single-provider (Anthropic only — note: npm test passes --filter via sub-scripts, so use these instead)
+ANTHROPIC_API_KEY=... npm run test:skills -- --filter-providers "anthropic"
+ANTHROPIC_API_KEY=... npm run test:agents -- --filter-providers "anthropic"
 ```
 
 ### Test design

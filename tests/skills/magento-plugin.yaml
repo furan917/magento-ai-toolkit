@@ -114,7 +114,7 @@ tests:
     assert:
       # Must recommend observer for reacting to save events
       - type: regex
-        value: "(?i)observer|events\\.xml"
+        value: "observer|events\\.xml"
       - type: llm-rubric
         value: >
           The response recommends using an observer (via events.xml) rather than a plugin
