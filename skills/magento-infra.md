@@ -8,7 +8,7 @@
 
 ## System Prompt
 
-You are a Magento 2 infrastructure specialist. You configure Redis (cache/sessions), RabbitMQ (message queues), and OpenSearch/Elasticsearch (search). You know the `env.php` configuration for each, the CLI commands to diagnose issues, and the differences between self-hosted and cloud-managed services.
+You are a Magento 2 infrastructure specialist. You configure Redis (cache/sessions), RabbitMQ (message queues), OpenSearch/Elasticsearch (search), and MySQL/MariaDB database connections. You know the `env.php` configuration for each, the CLI commands to diagnose issues, and the differences between self-hosted and cloud-managed services.
 
 ---
 
@@ -87,6 +87,10 @@ You are a Magento 2 infrastructure specialist. You configure Redis (cache/sessio
 
 ```bash
 redis-cli -h redis -p 6379
+
+# Key stats: hit rate, keyspace_hits, keyspace_misses — primary cache health indicator
+redis-cli info stats | grep -E "keyspace_hits|keyspace_misses|instantaneous_ops"
+# A healthy cache has keyspace_hits >> keyspace_misses (hit rate > 80%)
 
 # Memory usage
 redis-cli info memory
@@ -334,9 +338,10 @@ curl -X GET http://opensearch:9200/magento2_product_1_v1/_search?pretty \
 # Index stats
 curl http://opensearch:9200/magento2_product_1_v1/_stats?pretty
 
-# Delete index and reindex (fixes corruption)
-curl -X DELETE http://opensearch:9200/magento2_product_1_v1
+# Rebuild a corrupted or missing index — always go through the Magento indexer CLI
+# NEVER delete OpenSearch indices directly via curl — Magento's metadata will be inconsistent
 bin/magento indexer:reindex catalogsearch_fulltext
+bin/magento cache:flush
 ```
 
 ### opensearch.yml (Self-Hosted)
@@ -379,6 +384,58 @@ action.auto_create_index: true
 
 ---
 
+## MySQL / MariaDB Database Connections
+
+**Purpose**: Separate read/write workloads to reduce lock contention on busy stores.
+
+### env.php — Multiple DB Connections
+
+```php
+'db' => [
+    'table_prefix' => '',
+    'connection' => [
+        // Primary connection — all reads/writes by default
+        'default' => [
+            'host'     => 'db',
+            'dbname'   => 'magento',
+            'username' => 'magento',
+            'password' => 'magento',
+            'active'   => '1',
+        ],
+        // Indexer connection — isolates indexing load from frontend reads
+        'indexer' => [
+            'host'     => 'db-replica',  // can be same host or a read replica
+            'dbname'   => 'magento',
+            'username' => 'magento',
+            'password' => 'magento',
+            'active'   => '1',
+            'model'    => 'mysql4',
+        ],
+        // Checkout connection — isolates high-concurrency order writes
+        'checkout' => [
+            'host'     => 'db',
+            'dbname'   => 'magento',
+            'username' => 'magento',
+            'password' => 'magento',
+            'active'   => '1',
+            'model'    => 'mysql4',
+        ],
+    ]
+]
+```
+
+**When to use each connection:**
+
+| Connection | Purpose | Benefit |
+|------------|---------|---------|
+| `default` | General reads/writes | Baseline |
+| `indexer` | All indexer operations | Prevents indexer table locks from blocking frontend |
+| `checkout` | Order, quote writes | Isolates high-write checkout from catalog reads |
+
+**Key rule**: The `indexer` connection is the highest-impact separation — indexing operations acquire table-level locks that block frontend reads on the same connection.
+
+---
+
 ## Instructions for LLM
 
 - Redis: always use separate databases for cache (0), FPC (1), and sessions (2) — never share a database
@@ -388,4 +445,6 @@ action.auto_create_index: true
 - RabbitMQ: always set `maxMessages` in production to prevent consumer memory leaks
 - OpenSearch: the index prefix in env.php must match what's actually in OpenSearch — check with `_cat/indices`
 - OpenSearch: after any engine config change, always reindex `catalogsearch_fulltext`
+- OpenSearch: never delete or modify indices directly via curl or Kibana — always use `bin/magento indexer:reindex` to maintain consistency with Magento's index metadata
+- MySQL: separating the `indexer` connection (even to the same DB host) is the highest-value DB configuration change for busy stores — it prevents indexer locks from blocking frontend reads
 - For cloud services: do not suggest editing config files (redis.conf, opensearch.yml) — those are managed by the cloud provider

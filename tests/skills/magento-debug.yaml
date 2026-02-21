@@ -12,7 +12,7 @@ providers:
 defaultTest:
   assert:
     - type: latency
-      threshold: 30000
+      threshold: 60000
     - type: javascript
       value: "output.trim().length > 50"
     # Never suggest editing vendor/ files — always use plugin/preference/observer

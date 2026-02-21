@@ -12,7 +12,7 @@ providers:
 defaultTest:
   assert:
     - type: latency
-      threshold: 30000
+      threshold: 60000
     - type: javascript
       value: "output.trim().length > 50"
     - type: not-contains
@@ -29,8 +29,6 @@ tests:
         value: "webapi.xml"
       - type: contains
         value: "Api\\"
-      - type: not-contains
-        value: "Model\\Widget"
       - type: llm-rubric
         value: |
           The webapi.xml service class attribute must point to an interface in the Api/

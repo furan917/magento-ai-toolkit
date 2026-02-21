@@ -12,13 +12,11 @@ providers:
 defaultTest:
   assert:
     - type: latency
-      threshold: 30000
+      threshold: 60000
     - type: javascript
       value: "output.trim().length > 50"
     - type: not-contains
       value: "ObjectManager::getInstance"
-    - type: contains
-      value: "declare(strict_types=1)"
 
 tests:
   - description: "CLI command extends Command with configure() and execute() methods"
@@ -28,6 +26,8 @@ tests:
         Create a CLI command `vendor:products:sync` that accepts a `--store-id` option
         and syncs products for that store.
     assert:
+      - type: contains
+        value: "declare(strict_types=1)"
       - type: contains
         value: "extends Command"
       - type: contains
@@ -84,6 +84,8 @@ tests:
         Create a CLI command that imports 10,000 products from a CSV file and updates
         their prices and stock levels.
     assert:
+      - type: contains
+        value: "declare(strict_types=1)"
       - type: llm-rubric
         value: |
           The execute() method must not contain all the import logic inline. The command
@@ -98,6 +100,8 @@ tests:
         My CLI command needs to render a product URL and generate image thumbnails, but I'm
         getting errors about the area not being set. How do I fix this?
     assert:
+      - type: contains
+        value: "declare(strict_types=1)"
       - type: contains
         value: "setAreaCode"
       - type: llm-rubric

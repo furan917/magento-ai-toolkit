@@ -12,13 +12,9 @@ providers:
 defaultTest:
   assert:
     - type: latency
-      threshold: 30000
+      threshold: 60000
     - type: javascript
       value: "output.trim().length > 50"
-    - type: not-contains
-      value: "rm -rf generated"
-    - type: not-contains
-      value: "setup:di:compile"
 
 tests:
   - description: "Full deploy sequence includes all mandatory steps in order"

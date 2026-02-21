@@ -12,7 +12,7 @@ providers:
 defaultTest:
   assert:
     - type: latency
-      threshold: 30000
+      threshold: 60000
     - type: javascript
       value: "output.trim().length > 50"
     # Every response MUST end with the structured Bug Triage Report

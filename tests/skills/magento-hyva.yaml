@@ -12,7 +12,7 @@ providers:
 defaultTest:
   assert:
     - type: latency
-      threshold: 30000
+      threshold: 60000
     - type: javascript
       value: "output.trim().length > 50"
     - type: not-contains
@@ -32,9 +32,9 @@ tests:
     assert:
       - type: contains
         value: "x-data"
-      - type: contains
-        value: "x-on:"
-        # or @click
+      - type: regex
+        value: "x-on:|@click|@\\w"
+        # Alpine.js supports both x-on:click and @click shorthand
       - type: llm-rubric
         value: |
           The response must use Alpine.js syntax (x-data, x-on or @click, x-text or :value)

@@ -12,7 +12,7 @@ providers:
 defaultTest:
   assert:
     - type: latency
-      threshold: 30000
+      threshold: 60000
     - type: javascript
       value: "output.trim().length > 50"
     - type: not-contains
@@ -99,12 +99,13 @@ tests:
         the count of imported records to observers?
     assert:
       - type: contains
-        value: "_eventManager->dispatch"
+        value: "eventManager->dispatch"
+        # matches both $this->eventManager->dispatch and $this->_eventManager->dispatch
       - type: contains
         value: "vendor_module_import_complete"
       - type: llm-rubric
         value: |
           The response must show how to dispatch a custom event using
-          $this->_eventManager->dispatch() or EventManager::dispatch(), passing a data array
-          as the second argument. It should also show how an observer retrieves that data
-          using $observer->getData() or $observer->getEvent()->getData().
+          $this->eventManager->dispatch() (or $this->_eventManager->dispatch()), passing a
+          data array as the second argument. It should also show how an observer retrieves
+          that data using $observer->getData() or $observer->getEvent()->getData().

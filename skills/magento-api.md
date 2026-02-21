@@ -154,7 +154,7 @@ interface EntityRepositoryInterface
 }
 ```
 
-> PHPDoc `@throws` and `@return` on `Api/` interfaces are **required** — they are parsed by Magento's SOAP/REST API schema generator.
+> PHPDoc `@param`, `@return`, and `@throws` on `Api/` interfaces are **mandatory** — Magento's REST serialiser uses these annotations to convert PHP types to and from JSON. Without them, the API will silently fail or return the wrong types. Always use fully qualified class names in PHPDoc (not short names).
 
 ---
 
@@ -366,7 +366,7 @@ mutation {
 ## Instructions for LLM
 
 - REST endpoints must point to `Api/` interfaces — never Model classes directly
-- PHPDoc `@throws` and `@return` in `Api/` interfaces are mandatory for schema generation
+- PHPDoc `@param`, `@return`, and `@throws` in `Api/` interfaces are mandatory — the REST serialiser uses these to convert PHP types to/from JSON; missing or wrong annotations cause silent failures or incorrect response types
 - GraphQL resolver always returns an array, never an object
 - Pass `'model' => $entity` in resolver return array so child resolvers can access it
 - Anonymous REST endpoints (`<resource ref="anonymous"/>`) require no auth — use carefully

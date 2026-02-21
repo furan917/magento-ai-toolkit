@@ -283,3 +283,4 @@ vendor/bin/phpunit -c dev/tests/unit/phpunit.xml.dist --coverage-html coverage/
 - `@magentoDbIsolation enabled` is important for integration tests that write to the DB — without it, test data persists between tests
 - Never use `ObjectManager::getInstance()` in unit tests — instantiate directly with mocks
 - For integration tests, always use `Bootstrap::getObjectManager()->get()` not `create()` for services (singletons)
+- Never test private methods directly via Reflection — test them indirectly through the public methods that call them. If a private method is complex enough to need direct testing, it is a signal to extract it into a separate, testable class
