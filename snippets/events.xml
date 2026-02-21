@@ -1,0 +1,75 @@
+<?xml version="1.0"?>
+<!--
+    Magento 2 — events.xml Snippet Reference
+
+    GLOBAL EVENTS (all areas)
+    File: app/code/Vendor/Module/etc/events.xml
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
+
+    <event name="catalog_product_save_after">
+        <!--
+            shared="false" is mandatory on every observer.
+            Default is shared=true (singleton). Observers are stateful — they
+            receive event data via execute(). A shared observer bleeds data
+            between requests in PHP-FPM environments.
+        -->
+        <observer name="vendor_module_product_save_after"
+                  instance="Vendor\Module\Observer\ProductSaveAfter"
+                  shared="false"/>
+    </event>
+
+</config>
+
+<!--
+    ===========================================================
+    FRONTEND-ONLY EVENTS
+    File: app/code/Vendor/Module/etc/frontend/events.xml
+    Observer only fires on storefront requests.
+    ===========================================================
+-->
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
+
+    <event name="controller_action_predispatch">
+        <observer name="vendor_module_predispatch"
+                  instance="Vendor\Module\Observer\Predispatch"
+                  shared="false"/>
+    </event>
+
+</config>
+
+<!--
+    ===========================================================
+    COMMON MAGENTO EVENTS — QUICK REFERENCE
+
+    | Event name                              | Fires when                         | Key payload                        |
+    |-----------------------------------------|------------------------------------|------------------------------------|
+    | catalog_product_save_after              | Product saved (admin or API)       | $observer->getProduct()            |
+    | catalog_product_save_before             | Before product save                | $observer->getProduct()            |
+    | catalog_product_load_after              | Product loaded from DB             | $observer->getProduct()            |
+    | sales_order_place_after                 | Order placed                       | $observer->getOrder()              |
+    | sales_order_save_after                  | Order saved (any status change)    | $observer->getOrder()              |
+    | sales_order_invoice_save_after          | Invoice created                    | $observer->getInvoice()            |
+    | checkout_cart_add_product_complete      | Product added to cart              | $observer->getProduct()            |
+    | customer_login                          | Customer logged in                 | $observer->getCustomer()           |
+    | customer_logout                         | Customer logged out                | $observer->getCustomer()           |
+    | controller_action_predispatch           | Before any controller dispatch     | $observer->getRequest()            |
+    | cms_page_render                         | CMS page rendered                  | $observer->getPage()               |
+    | adminhtml_customer_save_after           | Customer saved in admin            | $observer->getCustomer()           |
+    | catalog_category_save_after             | Category saved                     | $observer->getCategory()           |
+
+    DISPATCHING A CUSTOM EVENT:
+    $this->eventManager->dispatch('vendor_module_entity_save_after', [
+        'entity' => $entity,    // key becomes $observer->getEvent()->getEntity()
+    ]);
+
+    OBSERVER CLASS CONTRACT:
+    - Must implement Magento\Framework\Event\ObserverInterface
+    - Single public method: execute(Observer $observer): void
+    - Null-check all event data — $observer->getEvent()->getData('entity') can be null
+    - No heavy logic in execute() — delegate to a service class
+    ===========================================================
+-->

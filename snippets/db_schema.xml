@@ -1,0 +1,124 @@
+<?xml version="1.0"?>
+<!--
+    Magento 2 — db_schema.xml Snippet Reference
+    File: app/code/Vendor/Module/db_schema.xml
+
+    AFTER ANY CHANGE TO THIS FILE, RUN:
+      bin/magento setup:db-declaration:generate-whitelist --module-name=Vendor_Module
+      bin/magento setup:upgrade
+
+    The whitelist (db_schema_whitelist.json) records which columns are managed
+    declaratively. It is required for column removal — without it Magento will
+    not drop columns even if removed from this file.
+
+    NEVER use InstallSchema.php or UpgradeSchema.php — both are deprecated.
+-->
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+
+    <table name="vendor_entity" resource="default" engine="innodb"
+           comment="Vendor Entity Table — one row per entity">
+
+        <!-- ======================
+             COLUMN TYPE REFERENCE
+             ====================== -->
+
+        <!-- INT — IDs, counts, foreign keys. unsigned=true prevents negative values. -->
+        <!-- identity=true makes this auto-increment (use only on the primary key column) -->
+        <column xsi:type="int"        name="entity_id"    unsigned="true"  nullable="false" identity="true" comment="Entity ID"/>
+
+        <!-- SMALLINT — status flags, small numeric codes (0-65535 unsigned) -->
+        <column xsi:type="smallint"   name="status"       unsigned="true"  nullable="false" default="1"     comment="Status (1=active, 0=inactive)"/>
+
+        <!-- BIGINT — large IDs, quantities, timestamps as integers -->
+        <column xsi:type="bigint"     name="external_id"  unsigned="true"  nullable="true"                  comment="External System ID"/>
+
+        <!-- VARCHAR — short strings, always set length -->
+        <column xsi:type="varchar"    name="name"         nullable="false" length="255"                     comment="Name"/>
+        <column xsi:type="varchar"    name="sku"          nullable="true"  length="64"                      comment="SKU"/>
+
+        <!-- TEXT — long text (up to ~65KB) -->
+        <column xsi:type="text"       name="description"  nullable="true"                                   comment="Description"/>
+
+        <!-- MEDIUMTEXT — very long text, HTML content (up to ~16MB) -->
+        <column xsi:type="mediumtext" name="content"      nullable="true"                                   comment="Rich HTML Content"/>
+
+        <!-- DECIMAL — monetary values. Always precision="12" scale="4" for prices.
+             NEVER use xsi:type="float" for money — floating-point imprecision corrupts financial data. -->
+        <column xsi:type="decimal"    name="price"        precision="12"   scale="4"    nullable="true"     comment="Price (never use float)"/>
+        <column xsi:type="decimal"    name="weight"       precision="12"   scale="4"    nullable="true"     comment="Weight"/>
+
+        <!-- BOOLEAN — true/false flags -->
+        <column xsi:type="boolean"    name="is_active"    nullable="false" default="1"                      comment="Is Active"/>
+
+        <!-- TIMESTAMP — dates and times. Use default="CURRENT_TIMESTAMP".
+             on_update="true" makes the column auto-update on every row change. -->
+        <column xsi:type="timestamp"  name="created_at"   nullable="false" default="CURRENT_TIMESTAMP"                       comment="Created At"/>
+        <column xsi:type="timestamp"  name="updated_at"   nullable="false" default="CURRENT_TIMESTAMP" on_update="true"      comment="Updated At"/>
+
+        <!-- DATE — date only, no time component -->
+        <column xsi:type="date"       name="valid_until"  nullable="true"                                   comment="Valid Until Date"/>
+
+        <!-- JSON — structured JSON data (MySQL 5.7+ / MariaDB 10.2+) -->
+        <column xsi:type="json"       name="metadata"     nullable="true"                                   comment="JSON Metadata"/>
+
+        <!-- BLOB — binary data (images, files). Consider object storage instead. -->
+        <column xsi:type="blob"       name="thumbnail"    nullable="true"                                   comment="Binary Thumbnail"/>
+
+        <!-- INT foreign key — unsigned to match the referenced PK -->
+        <column xsi:type="int"        name="store_id"     unsigned="true"  nullable="false" default="0"    comment="Store ID"/>
+
+
+        <!-- ======================
+             CONSTRAINTS
+             ====================== -->
+
+        <!-- PRIMARY KEY — every table must have one -->
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+
+        <!-- FOREIGN KEY
+             referenceId naming convention: TABLE_COLUMN_REFTABLE_REFCOLUMN (all uppercase)
+             onDelete options: CASCADE, SET NULL, RESTRICT, NO ACTION -->
+        <constraint xsi:type="foreign"
+                    referenceId="VENDOR_ENTITY_STORE_ID_STORE_STORE_ID"
+                    table="vendor_entity"       column="store_id"
+                    referenceTable="store"      referenceColumn="store_id"
+                    onDelete="CASCADE"/>
+
+        <!-- UNIQUE CONSTRAINT — enforce uniqueness across one or more columns -->
+        <constraint xsi:type="unique" referenceId="VENDOR_ENTITY_SKU_STORE_ID">
+            <column name="sku"/>
+            <column name="store_id"/>
+        </constraint>
+
+
+        <!-- ======================
+             INDEXES
+             ====================== -->
+
+        <!-- BTREE INDEX — standard index for WHERE/ORDER BY/JOIN columns.
+             MySQL does NOT auto-create indexes for foreign key columns — add one explicitly. -->
+        <index referenceId="VENDOR_ENTITY_STORE_ID" indexType="btree">
+            <column name="store_id"/>
+        </index>
+
+        <!-- COMPOSITE INDEX — multi-column filter. Put the most selective column first.
+             Satisfies queries on (status) alone or (status, is_active) together.
+             Does NOT satisfy queries on (is_active) alone. -->
+        <index referenceId="VENDOR_ENTITY_STATUS_IS_ACTIVE" indexType="btree">
+            <column name="status"/>
+            <column name="is_active"/>
+        </index>
+
+        <!-- FULLTEXT INDEX — enables MATCH() AGAINST() full-text search.
+             High write overhead — use only where text search is genuinely needed. -->
+        <index referenceId="VENDOR_ENTITY_NAME_DESCRIPTION" indexType="fulltext">
+            <column name="name"/>
+            <column name="description"/>
+        </index>
+
+    </table>
+
+</schema>

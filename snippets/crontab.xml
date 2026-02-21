@@ -1,0 +1,100 @@
+<?xml version="1.0"?>
+<!--
+    Magento 2 — crontab.xml Snippet Reference
+    File: app/code/Vendor/Module/etc/crontab.xml
+
+    Declares cron jobs and which group they run in.
+    Use the "default" group unless the job is resource-intensive — custom groups
+    run in a separate process and can be isolated from the main cron cycle.
+
+    AFTER ADDING OR CHANGING crontab.xml:
+      bin/magento cron:install
+      crontab -l   (verify Magento cron entries exist)
+      bin/magento cron:run --group=vendor_module   (test your group manually)
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Cron:etc/crontab.xsd">
+
+    <!-- Job in the built-in default group (most common) -->
+    <group id="default">
+        <job name="vendor_module_cleanup"
+             instance="Vendor\Module\Cron\Cleanup"
+             method="execute">
+            <!-- Schedule expressions:
+                 */5 * * * *   — every 5 minutes
+                 0 * * * *    — every hour at :00
+                 0 2 * * *    — daily at 02:00
+                 0 2 * * 0    — weekly Sunday at 02:00
+                 0 2 1 * *    — monthly on the 1st at 02:00
+            -->
+            <schedule>0 2 * * *</schedule>
+        </job>
+
+        <job name="vendor_module_sync"
+             instance="Vendor\Module\Cron\DataSync"
+             method="execute">
+            <schedule>*/15 * * * *</schedule>
+        </job>
+    </group>
+
+    <!-- Job in a custom group (runs in its own process — see cron_groups.xml below) -->
+    <group id="vendor_module">
+        <job name="vendor_module_heavy_import"
+             instance="Vendor\Module\Cron\HeavyImport"
+             method="execute">
+            <schedule>0 1 * * *</schedule>
+        </job>
+    </group>
+
+</config>
+
+<!--
+    ===========================================================
+    CRON GROUPS — cron_groups.xml
+    File: app/code/Vendor/Module/etc/cron_groups.xml
+
+    Defines the behaviour of a custom cron group.
+    Only needed if you declared a custom group id in crontab.xml.
+    ===========================================================
+-->
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Cron:etc/cron_groups.xsd">
+
+    <group id="vendor_module">
+        <!-- How often (minutes) to generate new scheduled job entries in cron_schedule table -->
+        <schedule_generate_every>1</schedule_generate_every>
+        <!-- How far ahead (minutes) to schedule jobs -->
+        <schedule_ahead_for>4</schedule_ahead_for>
+        <!-- How long (minutes) a job can stay in "running" state before considered missed -->
+        <schedule_lifetime>2</schedule_lifetime>
+        <!-- How often (minutes) to clean up old history records -->
+        <history_cleanup_every>10</history_cleanup_every>
+        <!-- How long (minutes) to keep successful job records -->
+        <history_success_lifetime>60</history_success_lifetime>
+        <!-- How long (minutes) to keep failed job records (keep longer for debugging) -->
+        <history_failure_lifetime>600</history_failure_lifetime>
+        <!-- 1 = run this group in a separate process (recommended for heavy jobs) -->
+        <use_separate_process>1</use_separate_process>
+    </group>
+
+</config>
+
+<!--
+    CRON CLASS CONTRACT:
+    namespace Vendor\Module\Cron;
+
+    class Cleanup
+    {
+        public function execute(): void
+        {
+            // job logic here
+            // return void — no return value is used by the cron runner
+        }
+    }
+
+    DEBUGGING:
+      bin/magento cron:run --group=vendor_module
+      tail -f var/log/magento.cron.log
+      SELECT * FROM cron_schedule WHERE job_code = 'vendor_module_cleanup' ORDER BY scheduled_at DESC LIMIT 10;
+-->

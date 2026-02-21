@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+<!--
+    Magento 2 — acl.xml Snippet Reference
+    File: app/code/Vendor/Module/etc/acl.xml
+
+    Defines ACL resources that appear in the admin role permission tree.
+    All custom resources must be nested under Magento_Backend::admin.
+
+    Resource ID naming convention: Vendor_Module::entity_action
+    Use the same ID in:
+      - menu.xml       → resource="Vendor_Module::entity_view"
+      - webapi.xml     → <resource ref="Vendor_Module::entity_view"/>
+      - Controller     → $this->_isAllowed('Vendor_Module::entity_view')
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Acl/etc/acl.xsd">
+    <acl>
+        <resources>
+            <!-- Magento_Backend::admin is the required root — all custom resources nest here -->
+            <resource id="Magento_Backend::admin">
+
+                <!-- Top-level grouping resource (appears as a section header in the role tree) -->
+                <resource id="Vendor_Module::root"
+                          title="My Module"
+                          sortOrder="100">
+
+                    <!-- View/list access -->
+                    <resource id="Vendor_Module::entity_view"
+                              title="View Entities"
+                              sortOrder="10"/>
+
+                    <!-- Create and edit access -->
+                    <resource id="Vendor_Module::entity_save"
+                              title="Create and Edit Entities"
+                              sortOrder="20"/>
+
+                    <!-- Delete access — keep separate so it can be denied independently -->
+                    <resource id="Vendor_Module::entity_delete"
+                              title="Delete Entities"
+                              sortOrder="30"/>
+
+                    <!-- Config access — for Stores > Config sections -->
+                    <resource id="Vendor_Module::config"
+                              title="Configuration"
+                              sortOrder="40"/>
+
+                </resource>
+            </resource>
+        </resources>
+    </acl>
+</config>
+
+<!--
+    NOTES:
+    - After adding new resources, admin roles must be re-saved for the new resources
+      to appear in the role tree (System > Permissions > User Roles > edit role > Save)
+    - A resource not listed in acl.xml cannot be granted to any role
+    - "All" permission in a role grants access to every resource, including new ones
+    - Use $this->_isAllowed('Vendor_Module::entity_save') in admin controllers
+      to check permission programmatically
+-->
