@@ -1,0 +1,38 @@
+# Shared defaults fragment — imported by individual sub-configs via:
+#   import:
+#     - ../promptfooconfig.yaml
+#
+# NOTE: promptfoo's import: directive merges partial config fragments.
+# Each sub-config in skills/ and agents/ is fully self-contained and
+# can be run directly:
+#
+#   npx promptfoo eval --config tests/skills/magento-plugin.yaml
+#
+# To run all tests at once, use the npm scripts:
+#
+#   npm test               — all 80 tests (skills then agents)
+#   npm run test:skills    — all 10 skill configs
+#   npm run test:agents    — all 6 agent configs
+#   npm run test:ci        — all tests with JSON output artefacts
+#
+# Sub-config list (all fully self-contained):
+#
+#   skills/magento-plugin.yaml
+#   skills/magento-db-schema.yaml
+#   skills/magento-debug.yaml
+#   skills/magento-observer.yaml
+#   skills/magento-deploy.yaml
+#   skills/magento-cli-command.yaml
+#   skills/magento-test.yaml
+#   skills/magento-api.yaml
+#   skills/magento-hyva.yaml
+#   skills/magento-infra.yaml
+#   agents/magento-bug-triage.yaml
+#   agents/magento-code-review.yaml
+#   agents/magento-deployment.yaml
+#   agents/magento-performance-auditor.yaml
+#   agents/magento-api-builder.yaml
+#   agents/magento-module-generator.yaml
+
+description: Magento AI Toolkit — shared test defaults
+

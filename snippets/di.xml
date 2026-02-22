@@ -1,0 +1,86 @@
+<?xml version="1.0"?>
+<!--
+    Magento 2 — di.xml Snippet Reference
+    Place in the correct area folder:
+      etc/di.xml            — all areas (global)
+      etc/frontend/di.xml   — storefront only
+      etc/adminhtml/di.xml  — admin panel only
+      etc/webapi_rest/di.xml
+      etc/graphql/di.xml
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+
+    <!-- =========================================================
+         PLUGIN (Interceptor)
+         Intercepts public methods on any non-final class.
+         - sortOrder: lower runs first for before-type; higher runs first for after-type
+         - disabled: set "true" to disable a third-party plugin without removing it
+         - Always prefer before/after over around (around has performance cost)
+         ========================================================= -->
+    <type name="Magento\Catalog\Model\Product">
+        <plugin name="vendor_module_product_plugin"
+                type="Vendor\Module\Plugin\ProductPlugin"
+                sortOrder="10"
+                disabled="false"/>
+    </type>
+
+    <!-- =========================================================
+         PREFERENCE
+         Replaces one class/interface with another globally.
+         Use when you need to replace an entire implementation.
+         Prefer plugins for intercepting individual methods.
+         ========================================================= -->
+    <preference for="Vendor\Module\Api\EntityRepositoryInterface"
+                type="Vendor\Module\Model\EntityRepository"/>
+
+    <!-- =========================================================
+         TYPE — Constructor Argument Injection
+         Inject a scalar, array, or named object into a constructor.
+         Use when a class needs config values or named instances
+         that cannot be resolved by type-hint alone.
+         ========================================================= -->
+    <type name="Vendor\Module\Model\Service">
+        <arguments>
+            <!-- Scalar value -->
+            <argument name="batchSize" xsi:type="number">100</argument>
+            <!-- String value -->
+            <argument name="apiEndpoint" xsi:type="string">https://example.com/api</argument>
+            <!-- Boolean -->
+            <argument name="isEnabled" xsi:type="boolean">true</argument>
+            <!-- Named object instance (uses the virtualType or concrete class name) -->
+            <argument name="logger" xsi:type="object">Psr\Log\LoggerInterface</argument>
+            <!-- Array of values -->
+            <argument name="allowedTypes" xsi:type="array">
+                <item name="simple" xsi:type="string">simple</item>
+                <item name="virtual" xsi:type="string">virtual</item>
+            </argument>
+            <!-- Null (useful to override a parent class argument) -->
+            <argument name="optionalDep" xsi:type="null"/>
+        </arguments>
+    </type>
+
+    <!-- =========================================================
+         VIRTUAL TYPE
+         Creates a named instance of a class with different constructor
+         arguments, without writing a new PHP class.
+         The virtualType name is used as if it were a class name elsewhere.
+         ========================================================= -->
+    <virtualType name="Vendor\Module\Model\SpecificLogger"
+                 type="Magento\Framework\Logger\Monolog">
+        <arguments>
+            <argument name="name" xsi:type="string">vendor_module</argument>
+            <argument name="handlers" xsi:type="array">
+                <item name="system" xsi:type="object">Magento\Framework\Logger\Handler\System</item>
+            </argument>
+        </arguments>
+    </virtualType>
+
+    <!-- Inject the virtualType into another class by its virtual name -->
+    <type name="Vendor\Module\Model\AnotherService">
+        <arguments>
+            <argument name="logger" xsi:type="object">Vendor\Module\Model\SpecificLogger</argument>
+        </arguments>
+    </type>
+
+</config>

@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<!--
+    Magento 2 — routes.xml Snippet Reference
+
+    FRONTEND ROUTE
+    File: app/code/Vendor/Module/etc/frontend/routes.xml
+    Gives the module a URL segment: /frontName/controller/action
+    e.g. frontName="mymodule" → /mymodule/index/index
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:App/etc/routes.xsd">
+    <router id="standard">
+        <route id="vendor_module" frontName="mymodule">
+            <!-- frontName: must match the first URL segment exactly — case-sensitive -->
+            <module name="Vendor_Module"/>
+        </route>
+    </router>
+</config>
+
+<!--
+    ===========================================================
+    ADMINHTML ROUTE
+    File: app/code/Vendor/Module/etc/adminhtml/routes.xml
+    Gives the module an admin URL: /admin/frontName/controller/action
+    before="Magento_Backend" ensures correct route priority in admin.
+    ===========================================================
+-->
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:App/etc/routes.xsd">
+    <router id="admin">
+        <route id="vendor_module" frontName="mymodule">
+            <module name="Vendor_Module" before="Magento_Backend"/>
+        </route>
+    </router>
+</config>
+
+<!--
+    NOTES:
+    - route id must be unique across all modules — use vendor_module pattern
+    - frontName must be unique across all modules — collisions cause silent 404s
+    - Controller class path must mirror the URL: frontName/ControllerDir/ActionName.php
+      e.g. /mymodule/product/save → Controller/Product/Save.php
+    - After adding routes.xml, flush cache: bin/magento cache:flush
+-->

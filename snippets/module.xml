@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<!--
+    Magento 2 — etc/module.xml Snippet Reference
+    File: app/code/Vendor/Module/etc/module.xml
+
+    Declares the module to Magento's module system.
+    The module name here MUST exactly match the directory structure:
+      Vendor_Module → app/code/Vendor/Module/
+
+    SEQUENCE — load order dependencies:
+    List every Magento (or third-party) module this module depends on.
+    Magento loads listed modules before this one. Missing sequence entries
+    cause random failures when your code tries to use a class or table
+    that hasn't been registered yet.
+
+    Common sequence entries:
+      Magento_Catalog     — if touching products, categories, attributes
+      Magento_Sales       — if touching orders, invoices, shipments
+      Magento_Customer    — if touching customers or addresses
+      Magento_Quote       — if touching the cart/checkout
+      Magento_Store       — if using store/website scope
+      Magento_Backend     — if adding admin UI
+      Magento_Ui          — if using UI components (grids, forms)
+      Magento_Webapi      — if declaring REST endpoints
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Module/etc/module.xsd">
+
+    <module name="Vendor_Module">
+        <sequence>
+            <module name="Magento_Catalog"/>
+            <module name="Magento_Store"/>
+            <!-- Add every module this module's code, schema, or observers depend on -->
+        </sequence>
+    </module>
+
+</config>

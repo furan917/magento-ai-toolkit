@@ -1,0 +1,121 @@
+import:
+  - ../promptfooconfig.yaml
+
+description: "Tests for agents/magento-deployment.md"
+
+prompts:
+  - file://../prompts/agent-wrapper.json
+
+providers:
+  - file://../providers.yaml
+
+defaultTest:
+  assert:
+    - type: latency
+      threshold: 150000
+    - type: javascript
+      value: "output.trim().length > 50"
+
+tests:
+  - description: "Full deployment report contains all 5 phases and smoke test"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-deployment/SKILL.md"
+      user_input: |
+        Deploy the latest code to production. The release includes a new module,
+        a database schema change, and updated static assets.
+    assert:
+      - type: contains
+        value: "## Deployment Report"
+      - type: contains
+        value: "Phase 1"
+      - type: contains
+        value: "Phase 2"
+      - type: contains
+        value: "Phase 3"
+      - type: contains
+        value: "maintenance:enable"
+      - type: contains
+        value: "setup:upgrade"
+      - type: not-contains
+        value: "rm -rf generated"
+      - type: llm-rubric
+        value: |
+          The deployment report must describe all 5 phases of a Magento deployment:
+          pre-deployment checks, build/compile phase, database migration, deploy/flush,
+          and post-deployment smoke testing. Each phase must have a clear status
+          (completed, skipped, or failed). The report must be structured, not free-form prose.
+
+  - description: "Agent refuses to skip maintenance mode"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-deployment/SKILL.md"
+      user_input: |
+        We're in a rush. Can you deploy without enabling maintenance mode? Our site is
+        getting high traffic and we don't want any downtime message.
+    assert:
+      - type: not-contains
+        value: "maintenance:disable"
+        # should not disable maintenance without enabling it first
+      - type: not-contains
+        value: "rm -rf generated"
+      - type: llm-rubric
+        value: |
+          The agent must refuse to skip maintenance mode for a deployment that includes
+          setup:upgrade or schema changes. It must explain the risk: customers may see
+          inconsistent state or errors during the database migration window without
+          maintenance mode. It may offer alternatives (blue-green deploy) but must not
+          simply agree to skip maintenance mode.
+
+  - description: "Deployment report sections are complete and specific"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-deployment/SKILL.md"
+      user_input: |
+        Perform a deployment for a patch release: no schema changes, no new modules.
+        Just updated PHP files and new static assets.
+    assert:
+      - type: contains
+        value: "## Deployment Report"
+      - type: not-contains
+        value: "rm -rf generated"
+      - type: llm-rubric
+        value: |
+          Even for a patch release with no schema changes, the report must explicitly
+          state which phases were run and which were skipped (e.g. "Phase 3: Database
+          migration — skipped, no schema changes"). The report must not be a generic
+          checklist but must reflect the specific release characteristics mentioned
+          in the user's request.
+
+  - description: "Skill detection: deploy skill vocabulary used for static content"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-deployment/SKILL.md"
+      user_input: |
+        The deployment went well but the frontend CSS and JS look broken after deploying.
+        What should I check?
+    assert:
+      - type: contains
+        value: "static-content:deploy"
+      - type: not-contains
+        value: "rm -rf generated"
+      - type: llm-rubric
+        value: |
+          The response must identify static content deployment as the likely issue and
+          reference the setup:static-content:deploy command with appropriate locales.
+          It should also mention cache:clean or cache:flush as follow-up steps. The
+          agent must use deployment terminology consistent with the magento-deploy skill.
+
+  - description: "Rollback procedure documented on deployment failure"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-deployment/SKILL.md"
+      user_input: |
+        The deployment failed during setup:upgrade because of a foreign key constraint
+        error. How do I recover?
+    assert:
+      - type: not-contains
+        value: "rm -rf generated"
+      - type: llm-rubric
+        value: |
+          The response must provide a concrete rollback procedure: it must mention
+          restoring from the pre-deployment database backup, restoring the previous
+          code version (git revert or previous symlink), running setup:upgrade again
+          if reverting to a previous schema state, and disabling maintenance mode
+          after recovery. It must acknowledge that partial schema migrations are the
+          hardest to roll back and may require manual SQL.

@@ -1,0 +1,238 @@
+import:
+  - ../promptfooconfig.yaml
+
+description: Tests for agents/magento-code-review.md
+
+prompts:
+  - file://../prompts/agent-wrapper.json
+
+providers:
+  - file://../providers.yaml
+
+defaultTest:
+  assert:
+    - type: latency
+      threshold: 150000
+    - type: javascript
+      value: "output.trim().length > 50"
+
+tests:
+  - description: "ObjectManager direct use → MAG-001 CRITICAL detected, fix is constructor injection"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-code-review/SKILL.md"
+      user_input: |
+        Please review this Magento service class:
+
+        ```php
+        <?php
+        namespace Vendor\Module\Model;
+
+        use Magento\Framework\ObjectManagerInterface;
+
+        class ProductService
+        {
+            public function getProduct(int $id)
+            {
+                $om = \Magento\Framework\App\ObjectManager::getInstance();
+                return $om->create(\Magento\Catalog\Model\Product::class);
+            }
+        }
+        ```
+    assert:
+      - type: contains
+        value: "## Code Review Report"
+      - type: contains
+        value: "Summary"
+      - type: contains
+        value: "MAG-001"
+      - type: contains
+        value: "CRITICAL"
+      # Fix must be constructor injection
+      - type: contains
+        value: "constructor"
+      - type: llm-rubric
+        value: >
+          The Code Review Report correctly identifies the ObjectManager::getInstance()
+          call as a MAG-001 CRITICAL finding and recommends injecting the dependency
+          via the constructor instead.
+
+  - description: "Missing declare(strict_types=1) → MAG-010 HIGH detected"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-code-review/SKILL.md"
+      user_input: |
+        Please review this Magento plugin class:
+
+        ```php
+        <?php
+        namespace Vendor\Module\Plugin;
+
+        use Magento\Catalog\Model\Product;
+
+        class ProductNamePlugin
+        {
+            public function afterGetName(Product $subject, string $result): string
+            {
+                return strtoupper($result);
+            }
+        }
+        ```
+    assert:
+      - type: contains
+        value: "## Code Review Report"
+      - type: contains
+        value: "Summary"
+      - type: contains
+        value: "MAG-010"
+      - type: contains
+        value: "strict_types"
+      - type: llm-rubric
+        value: >
+          The Code Review Report correctly flags the missing declare(strict_types=1)
+          statement as a MAG-010 HIGH finding and instructs the developer to add it
+          at the top of every PHP file.
+
+  - description: "Around plugin where after would suffice → MAG-005 HIGH, refactor to after"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-code-review/SKILL.md"
+      user_input: |
+        Please review this Magento around plugin:
+
+        ```php
+        <?php
+        declare(strict_types=1);
+        namespace Vendor\Module\Plugin;
+
+        use Magento\Catalog\Model\Product;
+
+        class ProductPricePlugin
+        {
+            public function aroundGetPrice(
+                Product $subject,
+                callable $proceed
+            ): float {
+                $result = $proceed();
+                return $result * 1.1;
+            }
+        }
+        ```
+    assert:
+      - type: contains
+        value: "## Code Review Report"
+      - type: contains
+        value: "Summary"
+      - type: contains
+        value: "MAG-005"
+      # Must recommend refactoring to an after plugin
+      - type: contains
+        value: "after"
+      - type: llm-rubric
+        value: >
+          The Code Review Report flags the around plugin as MAG-005 HIGH because the
+          plugin only modifies the return value and an after plugin would suffice.
+          It recommends refactoring to afterGetPrice.
+
+  - description: "Clean code with no violations → Passed Checks section, no fabricated findings"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-code-review/SKILL.md"
+      user_input: |
+        Please review this Magento observer class:
+
+        ```php
+        <?php
+        declare(strict_types=1);
+        namespace Vendor\Module\Observer;
+
+        use Magento\Framework\Event\ObserverInterface;
+        use Magento\Framework\Event\Observer;
+        use Psr\Log\LoggerInterface;
+
+        class ProductSaveObserver implements ObserverInterface
+        {
+            public function __construct(
+                private readonly LoggerInterface $logger
+            ) {}
+
+            public function execute(Observer $observer): void
+            {
+                $product = $observer->getEvent()->getProduct();
+                $this->logger->info('Product saved: ' . $product->getSku());
+            }
+        }
+        ```
+    assert:
+      - type: contains
+        value: "## Code Review Report"
+      - type: contains
+        value: "Summary"
+      # Must not invent MAG-001 when ObjectManager is not present
+      - type: not-contains
+        value: "MAG-001"
+      - type: llm-rubric
+        value: >
+          The Code Review Report does not fabricate violations for code that follows
+          Magento best practices. It either shows zero findings or only flags legitimate
+          issues, and does not invent problems to appear thorough.
+
+  - description: "Four violations at once → all 4 MAG codes present and Summary table counts consistent"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-code-review/SKILL.md"
+      user_input: |
+        Please review this Magento module code:
+
+        ```php
+        <?php
+        namespace Vendor\Module\Model;
+
+        class DataService
+        {
+            public function getProduct(int $id)
+            {
+                $om = \Magento\Framework\App\ObjectManager::getInstance();
+                return $om->create(\Magento\Catalog\Model\Product::class);
+            }
+        }
+        ```
+
+        And this template:
+        ```php
+        <!-- template.phtml -->
+        <?php $name = $block->getProductName(); ?>
+        <h1><?= $name ?></h1>
+        ```
+
+        And this around plugin:
+        ```php
+        <?php
+        namespace Vendor\Module\Plugin;
+
+        class PricePlugin
+        {
+            public function aroundGetPrice($subject, callable $proceed): float
+            {
+                return $proceed() * 1.1;
+            }
+        }
+        ```
+    assert:
+      - type: contains
+        value: "## Code Review Report"
+      - type: contains
+        value: "Summary"
+      # All four violation codes must be detected
+      - type: contains
+        value: "MAG-001"
+      # Unescaped $name in template
+      - type: contains
+        value: "MAG-002"
+      # Around plugin where after would suffice
+      - type: contains
+        value: "MAG-005"
+      # Missing strict_types in both PHP files
+      - type: contains
+        value: "MAG-010"
+      - type: llm-rubric
+        value: >
+          The Code Review Report detects all four violations: MAG-001 (ObjectManager),
+          MAG-002 (unescaped output in template), MAG-005 (around plugin),
+          and MAG-010 (missing strict_types). The Summary table severity counts
+          are consistent with the number of findings listed.

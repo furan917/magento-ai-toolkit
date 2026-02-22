@@ -1,0 +1,119 @@
+import:
+  - ../promptfooconfig.yaml
+
+description: "Tests for skills/magento-observer.md"
+
+prompts:
+  - file://../prompts/skill-wrapper.json
+
+providers:
+  - file://../providers.yaml
+
+defaultTest:
+  assert:
+    - type: latency
+      threshold: 120000
+    - type: javascript
+      value: "output.trim().length > 50"
+    - type: not-contains
+      value: "shared=\"true\""
+
+tests:
+  - description: "Observer class implements ObserverInterface with correct execute signature"
+    vars:
+      system_prompt: "file://../../skills/magento-observer/SKILL.md"
+      user_input: |
+        Generate an observer that listens to the `catalog_product_save_after` event
+        and logs the product SKU.
+    assert:
+      - type: contains
+        value: "ObserverInterface"
+      - type: contains
+        value: "execute(Observer $observer): void"
+      - type: contains
+        value: "shared=\"false\""
+      - type: contains
+        value: "declare(strict_types=1)"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: llm-rubric
+        value: |
+          The response must declare an observer class that implements
+          Magento\Framework\Event\ObserverInterface, has an execute() method with a void
+          return type, and includes a matching events.xml entry with shared="false".
+
+  - description: "Null-check on getData() before use"
+    vars:
+      system_prompt: "file://../../skills/magento-observer/SKILL.md"
+      user_input: |
+        Create an observer for `sales_order_place_after` that reads a custom order attribute
+        and sends it to a third-party API.
+    assert:
+      - type: contains
+        value: "getData("
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: llm-rubric
+        value: |
+          The observer code must null-check or guard the result of getData() before using it —
+          e.g. using an if statement or null coalescing. It must not blindly pass getData()
+          result to a method without checking it first.
+
+  - description: "events.xml and observer class are generated together"
+    vars:
+      system_prompt: "file://../../skills/magento-observer/SKILL.md"
+      user_input: |
+        I need to invalidate a cache tag whenever a product is saved.
+        Show me everything I need: the observer class and its registration.
+    assert:
+      - type: contains
+        value: "events.xml"
+      - type: contains
+        value: "catalog_product_save_after"
+      - type: contains
+        value: "instance="
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: llm-rubric
+        value: |
+          The response must include both the events.xml XML snippet with the event/observer
+          declaration AND the PHP observer class. Both must be present — not just one.
+
+  - description: "Heavy logic belongs in a service, not in the observer directly"
+    vars:
+      system_prompt: "file://../../skills/magento-observer/SKILL.md"
+      user_input: |
+        On customer_register_success event I need to: validate the customer's email domain,
+        create a loyalty account via an external API, send a welcome email, and write an
+        audit log entry. Put it all in the observer.
+    assert:
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: llm-rubric
+        value: |
+          The response must NOT place all business logic directly in execute(). It should
+          either inject a service/helper into the observer via constructor and delegate to it,
+          or explicitly explain that heavy logic should be delegated to a service class.
+          The execute() method in the response should be thin (a delegating call), not a
+          large block of inline business logic.
+
+  - description: "Custom event dispatch includes correct parameter passing"
+    vars:
+      system_prompt: "file://../../skills/magento-observer/SKILL.md"
+      user_input: |
+        How do I dispatch a custom event called `vendor_module_import_complete` and pass
+        the count of imported records to observers?
+    assert:
+      - type: contains
+        value: "eventManager->dispatch"
+        # matches both $this->eventManager->dispatch and $this->_eventManager->dispatch
+      - type: contains
+        value: "vendor_module_import_complete"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: llm-rubric
+        value: |
+          The response must show how to dispatch a custom event using
+          $this->eventManager->dispatch() (or $this->_eventManager->dispatch()), passing a
+          data array as the second argument. It should also show how an observer retrieves
+          that data using $observer->getData() or $observer->getEvent()->getData().

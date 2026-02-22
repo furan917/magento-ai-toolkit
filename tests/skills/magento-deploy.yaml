@@ -1,0 +1,103 @@
+import:
+  - ../promptfooconfig.yaml
+
+description: "Tests for skills/magento-deploy.md"
+
+prompts:
+  - file://../prompts/skill-wrapper.json
+
+providers:
+  - file://../providers.yaml
+
+defaultTest:
+  assert:
+    - type: latency
+      threshold: 120000
+    - type: javascript
+      value: "output.trim().length > 50"
+
+tests:
+  - description: "Full deploy sequence includes all mandatory steps in order"
+    vars:
+      system_prompt: "file://../../skills/magento-deploy/SKILL.md"
+      user_input: |
+        Walk me through the complete deployment process for a Magento 2 store on a
+        dedicated server. I'm deploying a new module.
+    assert:
+      - type: contains
+        value: "maintenance:enable"
+      - type: contains
+        value: "setup:upgrade"
+      - type: contains
+        value: "--keep-generated"
+      - type: contains
+        value: "maintenance:disable"
+      - type: llm-rubric
+        value: |
+          The deployment sequence must appear in a correct order:
+          1. maintenance mode ON before setup:upgrade
+          2. setup:upgrade (or setup:db:status check first)
+          3. cache:flush after upgrade
+          4. maintenance mode OFF only at the end
+          The response must NOT place maintenance:disable before setup:upgrade completes.
+
+  - description: "--keep-generated is non-negotiable on production"
+    vars:
+      system_prompt: "file://../../skills/magento-deploy/SKILL.md"
+      user_input: |
+        On our production server we run `bin/magento setup:upgrade` as part of deployment.
+        Should we delete the generated/ directory before or after this command?
+    assert:
+      - type: contains
+        value: "--keep-generated"
+      - type: not-contains
+        value: "rm -rf var/generation"
+      - type: llm-rubric
+        value: |
+          The response must recommend using --keep-generated flag to preserve the compiled
+          DI classes during setup:upgrade on production. It must NOT recommend deleting the
+          generated/ directory on production as this would cause a temporary outage.
+
+  - description: "Build phase vs deploy phase distinction is clear"
+    vars:
+      system_prompt: "file://../../skills/magento-deploy/SKILL.md"
+      user_input: |
+        What's the difference between the build phase and deploy phase in Magento deployment?
+        Which commands go in each?
+    assert:
+      - type: contains
+        value: "setup:static-content:deploy"
+      - type: llm-rubric
+        value: |
+          The response must distinguish between the build phase (compiling assets, static
+          content deploy, DI compile — all safe to run without maintenance mode, on a build
+          server) and the deploy phase (setup:upgrade, cache:flush — requires maintenance mode,
+          runs on production). These two phases should be clearly described as separate.
+
+  - description: "OPcache must be flushed after deploy"
+    vars:
+      system_prompt: "file://../../skills/magento-deploy/SKILL.md"
+      user_input: |
+        We deployed a new PHP file to production but the old code is still running.
+        What do we need to do after a Magento deployment?
+    assert:
+      - type: llm-rubric
+        value: |
+          The response must mention OPcache invalidation or flushing (e.g. opcache_reset(),
+          PHP-FPM reload/restart, or web server restart) as a required post-deployment step.
+          It must also mention cache:flush. The connection between OPcache and stale PHP
+          bytecache must be explained.
+
+  - description: "Zero-downtime deployment pattern is described correctly"
+    vars:
+      system_prompt: "file://../../skills/magento-deploy/SKILL.md"
+      user_input: |
+        How can I deploy Magento with zero downtime? We can't afford maintenance mode.
+    assert:
+      - type: llm-rubric
+        value: |
+          The response must describe a blue-green or symlink-based deployment strategy,
+          and must acknowledge that true zero-downtime for Magento requires careful
+          handling of database migrations (backward-compatible schema changes) and
+          that setup:upgrade with schema changes cannot be fully zero-downtime without
+          extra precautions. It should not promise zero-downtime without caveats.

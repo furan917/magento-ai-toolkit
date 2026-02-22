@@ -1,0 +1,147 @@
+import:
+  - ../promptfooconfig.yaml
+
+description: Tests for skills/magento-db-schema.md
+
+prompts:
+  - file://../prompts/skill-wrapper.json
+
+providers:
+  - file://../providers.yaml
+
+defaultTest:
+  assert:
+    - type: latency
+      threshold: 120000
+    - type: javascript
+      value: "output.trim().length > 50"
+
+tests:
+  - description: "Schema XML has correct root, primary key constraint, identity column, and CURRENT_TIMESTAMP timestamps"
+    vars:
+      system_prompt: "file://../../skills/magento-db-schema/SKILL.md"
+      user_input: >
+        Create a db_schema.xml for a table called vendor_wishlist with columns:
+        entity_id (primary key, auto-increment), name (varchar 255, not null),
+        status (smallint, default 1), and created_at (timestamp).
+    assert:
+      - type: contains
+        value: "db_schema.xml"
+      # Primary key must use xsi:type="primary" constraint
+      - type: contains
+        value: 'xsi:type="primary"'
+      # Auto-increment primary key requires identity="true"
+      - type: contains
+        value: 'identity="true"'
+      # Timestamps default to CURRENT_TIMESTAMP
+      - type: contains
+        value: "CURRENT_TIMESTAMP"
+      - type: not-contains
+        value: "InstallSchema"
+      - type: not-contains
+        value: "UpgradeSchema"
+      - type: llm-rubric
+        value: >
+          The db_schema.xml has a valid schema root element, includes a primary key
+          constraint with xsi:type="primary" referencing the entity_id column,
+          the entity_id column has identity="true", and timestamp columns default
+          to CURRENT_TIMESTAMP.
+
+  - description: "Price columns use decimal precision=12 scale=4, never float"
+    vars:
+      system_prompt: "file://../../skills/magento-db-schema/SKILL.md"
+      user_input: >
+        Add a price column and a discount_amount column to my db_schema.xml table.
+        Both store monetary values.
+    assert:
+      # Prices must be decimal, not float (floating-point imprecision)
+      - type: contains
+        value: 'xsi:type="decimal"'
+      - type: contains
+        value: 'precision="12"'
+      - type: contains
+        value: 'scale="4"'
+      # float is forbidden for monetary values
+      - type: not-contains
+        value: 'xsi:type="float"'
+      - type: not-contains
+        value: "InstallSchema"
+      - type: not-contains
+        value: "UpgradeSchema"
+      - type: llm-rubric
+        value: >
+          Both price columns use xsi:type="decimal" with precision="12" and scale="4".
+          The response does not use xsi:type="float" for monetary values.
+
+  - description: "Foreign key column also has a matching index element"
+    vars:
+      system_prompt: "file://../../skills/magento-db-schema/SKILL.md"
+      user_input: >
+        Add a store_id foreign key column to my vendor_entity table in db_schema.xml.
+        It should reference the store table's store_id column with CASCADE on delete.
+    assert:
+      - type: contains
+        value: 'xsi:type="foreign"'
+      # MySQL does not auto-create indexes for FK columns — must be explicit
+      - type: contains
+        value: "<index"
+      - type: contains
+        value: "onDelete"
+      - type: not-contains
+        value: "InstallSchema"
+      - type: not-contains
+        value: "UpgradeSchema"
+      - type: llm-rubric
+        value: >
+          The response includes both a foreign key constraint element and a separate
+          index element for the store_id column, because MySQL does not automatically
+          create indexes for foreign key columns.
+
+  - description: "Model, ResourceModel, and Collection triad are always generated together"
+    vars:
+      system_prompt: "file://../../skills/magento-db-schema/SKILL.md"
+      user_input: >
+        Create the full Model, ResourceModel, and Collection PHP classes for a
+        vendor_wishlist table with entity_id as the primary key.
+    assert:
+      - type: contains
+        value: "declare(strict_types=1)"
+      # All three layers of the ORM pattern must be present
+      - type: contains
+        value: "AbstractModel"
+      - type: contains
+        value: "AbstractDb"
+      - type: contains
+        value: "AbstractCollection"
+      - type: not-contains
+        value: "InstallSchema"
+      - type: not-contains
+        value: "UpgradeSchema"
+      - type: llm-rubric
+        value: >
+          The response generates all three files: a Model extending AbstractModel,
+          a ResourceModel extending AbstractDb, and a Collection extending
+          AbstractCollection. All three reference each other correctly.
+
+  - description: "Whitelist generation and setup:upgrade commands always follow schema changes"
+    vars:
+      system_prompt: "file://../../skills/magento-db-schema/SKILL.md"
+      user_input: >
+        I just modified my db_schema.xml to add a new column. What commands do I
+        need to run to apply the changes?
+    assert:
+      # Whitelist must be regenerated after any schema change
+      - type: contains
+        value: "setup:db-declaration:generate-whitelist"
+      # setup:upgrade applies the schema changes
+      - type: contains
+        value: "setup:upgrade"
+      - type: not-contains
+        value: "InstallSchema"
+      - type: not-contains
+        value: "UpgradeSchema"
+      - type: llm-rubric
+        value: >
+          The response includes both the generate-whitelist command and setup:upgrade,
+          and explains why the whitelist must be regenerated (it records which columns
+          are managed declaratively, required for column removal).

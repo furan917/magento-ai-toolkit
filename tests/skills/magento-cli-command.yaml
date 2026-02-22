@@ -1,0 +1,123 @@
+import:
+  - ../promptfooconfig.yaml
+
+description: "Tests for skills/magento-cli-command.md"
+
+prompts:
+  - file://../prompts/skill-wrapper.json
+
+providers:
+  - file://../providers.yaml
+
+defaultTest:
+  assert:
+    - type: latency
+      threshold: 120000
+    - type: javascript
+      value: "output.trim().length > 50"
+
+tests:
+  - description: "CLI command extends Command with configure() and execute() methods"
+    vars:
+      system_prompt: "file://../../skills/magento-cli-command/SKILL.md"
+      user_input: |
+        Create a CLI command `vendor:products:sync` that accepts a `--store-id` option
+        and syncs products for that store.
+    assert:
+      - type: contains
+        value: "declare(strict_types=1)"
+      - type: contains
+        value: "extends Command"
+      - type: contains
+        value: "configure()"
+      - type: contains
+        value: "execute("
+      - type: contains
+        value: "setName("
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: llm-rubric
+        value: |
+          The command class must extend Symfony\Component\Console\Command\Command,
+          implement configure() which calls setName() and addOption(), and implement
+          execute() which returns Command::SUCCESS or Command::FAILURE (integer constants).
+          The return type of execute() should be int.
+
+  - description: "InputArgument vs InputOption used correctly"
+    vars:
+      system_prompt: "file://../../skills/magento-cli-command/SKILL.md"
+      user_input: |
+        My CLI command needs a required entity ID (positional) and an optional `--dry-run`
+        flag. How do I declare these?
+    assert:
+      - type: contains
+        value: "InputArgument"
+      - type: contains
+        value: "InputOption"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: llm-rubric
+        value: |
+          The response must use InputArgument for the required positional entity ID
+          (addArgument()) and InputOption for the --dry-run flag (addOption() with
+          InputOption::VALUE_NONE). It must not use InputArgument for flags or
+          InputOption for positional required values.
+
+  - description: "Command is registered in di.xml via CommandList"
+    vars:
+      system_prompt: "file://../../skills/magento-cli-command/SKILL.md"
+      user_input: |
+        I've created my CLI command class. How do I register it so `bin/magento` discovers it?
+    assert:
+      - type: contains
+        value: "di.xml"
+      - type: contains
+        value: "CommandList"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: llm-rubric
+        value: |
+          The response must show the di.xml entry that injects the command class into
+          Magento\Framework\Console\CommandList (or CommandLocatorInterface) via an
+          argument item array. It must not say to edit bin/magento or any core file.
+
+  - description: "Business logic delegated to injected service, not inline in execute()"
+    vars:
+      system_prompt: "file://../../skills/magento-cli-command/SKILL.md"
+      user_input: |
+        Create a CLI command that imports 10,000 products from a CSV file and updates
+        their prices and stock levels.
+    assert:
+      - type: contains
+        value: "declare(strict_types=1)"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: llm-rubric
+        value: |
+          The execute() method must delegate to a single high-level service class
+          (e.g. ImportService, ProductImporter) that encapsulates the entire import
+          workflow. The command must NOT orchestrate between multiple domain classes
+          (CsvReader, Validator, ProductProcessor, etc.) directly — that orchestration
+          belongs inside the service. The command's sole responsibility is to parse
+          CLI input, call one service method, and write output to the console.
+
+  - description: "Area code set correctly for commands needing storefront context"
+    vars:
+      system_prompt: "file://../../skills/magento-cli-command/SKILL.md"
+      user_input: |
+        My CLI command needs to render a product URL and generate image thumbnails, but I'm
+        getting errors about the area not being set. How do I fix this?
+    assert:
+      - type: contains
+        value: "declare(strict_types=1)"
+      - type: contains
+        value: "setAreaCode"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: llm-rubric
+        value: |
+          The response must explain that CLI commands run in the default area and some
+          operations require frontend or adminhtml area. It must show how to call
+          $this->state->setAreaCode(Area::AREA_FRONTEND) (or similar) wrapped in a
+          try/catch to handle LocalizedException when area is already set. It must
+          not suggest editing core area configuration files.

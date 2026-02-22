@@ -1,0 +1,108 @@
+import:
+  - ../promptfooconfig.yaml
+
+description: "Tests for agents/magento-performance-auditor.md"
+
+prompts:
+  - file://../prompts/agent-wrapper.json
+
+providers:
+  - file://../providers.yaml
+
+defaultTest:
+  assert:
+    - type: latency
+      threshold: 150000
+    - type: javascript
+      value: "output.trim().length > 50"
+
+tests:
+  - description: "Audit report covers all 8 layers with a score"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-performance-auditor/SKILL.md"
+      user_input: |
+        Our Magento store's TTFB is over 3 seconds on the homepage. Please audit
+        the performance across all relevant layers.
+    assert:
+      - type: contains
+        value: "## Performance Audit Report"
+      - type: contains
+        value: "Score"
+      - type: llm-rubric
+        value: |
+          The audit report must evaluate all 8 performance layers: PHP/FPM, OPcache,
+          Redis (cache + sessions), database query performance, indexer strategy,
+          full-page cache (Varnish or Fastly), static asset delivery (CDN, merge, minify),
+          and Elasticsearch/OpenSearch. Each layer must be assessed individually.
+          The report must include a numeric or categorical score.
+
+  - description: "Agent does not auto-apply fixes — recommendations only"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-performance-auditor/SKILL.md"
+      user_input: |
+        The audit found that Redis cache has a hit rate of only 40%. Fix it for me.
+    assert:
+      - type: contains
+        value: "## Performance Audit Report"
+      - type: llm-rubric
+        value: |
+          The agent must NOT modify any configuration files, run any commands on the
+          server, or claim to have applied fixes. It must only provide recommendations
+          with specific commands the user should run (e.g. which env.php settings to
+          adjust, redis-cli commands to diagnose further). The agent's role is analysis
+          and recommendation, not remediation.
+
+  - description: "Report contains Critical, High, Medium severity sections"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-performance-auditor/SKILL.md"
+      user_input: |
+        Do a full performance audit. Here's our setup: no Varnish, Redis for cache only
+        (not sessions), OPcache enabled, MySQL 8, catalogsearch using realtime indexer
+        on 80,000 SKUs, no CDN.
+    assert:
+      - type: contains
+        value: "## Performance Audit Report"
+      - type: contains
+        value: "Critical"
+      - type: llm-rubric
+        value: |
+          The report must categorise findings into Critical, High, and Medium severity
+          levels. Realtime catalogsearch indexer with 80,000 SKUs must be flagged as
+          Critical or High. Missing Varnish/FPC must appear as a High finding. Missing
+          CDN must appear. Sessions not using Redis must be flagged. The severity
+          classifications must be consistent with the finding descriptions.
+
+  - description: "Skill detection: magento-infra vocabulary used for Redis/DB findings"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-performance-auditor/SKILL.md"
+      user_input: |
+        Audit our Redis configuration. We have DB 0 for cache and DB 0 for sessions.
+    assert:
+      - type: contains
+        value: "## Performance Audit Report"
+      - type: contains
+        value: "DB"
+      - type: llm-rubric
+        value: |
+          The agent must identify that sharing Redis DB 0 between cache and sessions is
+          a Critical or High finding. It must recommend the correct DB separation:
+          DB 0 for cache, DB 1 for FPC, DB 2 for sessions, each with a unique id_prefix.
+          The recommendation must use infrastructure terminology consistent with the
+          magento-infra skill (env.php configuration, id_prefix, db number).
+
+  - description: "Realtime indexer on large catalog flagged as HIGH"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-performance-auditor/SKILL.md"
+      user_input: |
+        We have 50,000 products and the indexer mode is set to realtime for all indexers
+        including catalogsearch_fulltext. Is this a problem?
+    assert:
+      - type: contains
+        value: "## Performance Audit Report"
+      - type: llm-rubric
+        value: |
+          The response must flag realtime indexer mode for catalogsearch_fulltext with
+          50,000+ products as a HIGH or CRITICAL performance issue. It must recommend
+          switching to schedule mode using bin/magento indexer:set-mode schedule
+          catalogsearch_fulltext and setting up cron to run the indexer. It must explain
+          that realtime reindexing on every save blocks the request at that scale.

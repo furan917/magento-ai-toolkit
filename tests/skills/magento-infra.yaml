@@ -1,0 +1,110 @@
+import:
+  - ../promptfooconfig.yaml
+
+description: "Tests for skills/magento-infra.md"
+
+prompts:
+  - file://../prompts/skill-wrapper.json
+
+providers:
+  - file://../providers.yaml
+
+defaultTest:
+  assert:
+    - type: latency
+      threshold: 120000
+    - type: javascript
+      value: "output.trim().length > 50"
+
+tests:
+  - description: "Redis env.php structure uses correct DB separation"
+    vars:
+      system_prompt: "file://../../skills/magento-infra/SKILL.md"
+      user_input: |
+        Configure Magento to use Redis for cache, full-page cache, and sessions.
+        Show me the env.php configuration.
+    assert:
+      - type: contains
+        value: "cache"
+      - type: contains
+        value: "session"
+      - type: llm-rubric
+        value: |
+          The env.php configuration must assign Redis DB 0 to cache, DB 1 to full-page
+          cache (FPC), and DB 2 to sessions. These DB numbers must not be shared between
+          the three uses. The response must include 'id_prefix' in the cache config to
+          prevent key collisions when multiple Magento instances share the same Redis.
+
+  - description: "Database connections separated: default, indexer, checkout"
+    vars:
+      system_prompt: "file://../../skills/magento-infra/SKILL.md"
+      user_input: |
+        We're experiencing database lock contention on our busy store. How should we
+        structure Magento's database connections?
+    assert:
+      - type: llm-rubric
+        value: |
+          The response must explain that Magento supports multiple DB connection
+          configurations and recommend at minimum separating the indexer connection
+          (to a read replica or isolated connection) to prevent indexing operations
+          from blocking frontend reads. It should mention the 'indexer' and optionally
+          'checkout' connection sections in env.php db.connection configuration.
+
+  - description: "RabbitMQ requires all four config files"
+    vars:
+      system_prompt: "file://../../skills/magento-infra/SKILL.md"
+      user_input: |
+        Set up asynchronous message processing in Magento using RabbitMQ for a custom
+        import queue.
+    assert:
+      - type: contains
+        value: "communication.xml"
+      - type: contains
+        value: "queue_topology.xml"
+      - type: contains
+        value: "queue_consumer.xml"
+      - type: contains
+        value: "queue_publisher.xml"
+      - type: llm-rubric
+        value: |
+          The response must mention all four required XML config files for RabbitMQ
+          integration: communication.xml (declares topics), queue_topology.xml (declares
+          exchanges and bindings), queue_consumer.xml (declares consumer handlers), and
+          queue_publisher.xml (declares publishers). Missing any of these files will
+          cause the queue to silently fail.
+
+  - description: "Redis diagnostics use redis-cli, not direct PHP ObjectManager"
+    vars:
+      system_prompt: "file://../../skills/magento-infra/SKILL.md"
+      user_input: |
+        Our Magento site is slow and I suspect Redis cache is not working. How do I
+        diagnose the Redis cache layer?
+    assert:
+      - type: contains
+        value: "redis-cli"
+      - type: llm-rubric
+        value: |
+          The response must include redis-cli commands for diagnosis (e.g. redis-cli info
+          stats, redis-cli monitor, redis-cli --scan to inspect keys). It must mention
+          checking the hit_rate or keyspace_hits/misses. It must NOT suggest using
+          ObjectManager in PHP to diagnose — that is a development-only workaround and
+          would cause more load.
+
+  - description: "OpenSearch/Elasticsearch index operations through Magento CLI"
+    vars:
+      system_prompt: "file://../../skills/magento-infra/SKILL.md"
+      user_input: |
+        Products are missing from search results after a bulk import. How do I fix the
+        search index?
+    assert:
+      - type: contains
+        value: "indexer:reindex"
+      - type: contains
+        value: "catalogsearch_fulltext"
+      - type: llm-rubric
+        value: |
+          The response must use bin/magento indexer:reindex catalogsearch_fulltext (or
+          indexer:reindex all) to rebuild the search index. It must NOT suggest directly
+          modifying OpenSearch/Elasticsearch indices via curl or the Kibana UI — all
+          index management in Magento must go through the indexer CLI to maintain
+          consistency with Magento's index metadata.

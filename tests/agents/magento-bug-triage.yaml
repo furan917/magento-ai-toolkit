@@ -1,0 +1,159 @@
+import:
+  - ../promptfooconfig.yaml
+
+description: Tests for agents/magento-bug-triage.md
+
+prompts:
+  - file://../prompts/agent-wrapper.json
+
+providers:
+  - file://../providers.yaml
+
+defaultTest:
+  assert:
+    - type: latency
+      threshold: 150000
+    - type: javascript
+      value: "output.trim().length > 50"
+
+tests:
+  - description: "White page triage: reads exception.log, all 5 report sections present"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-bug-triage/SKILL.md"
+      user_input: >
+        I have a white page on my Magento 2.4 store. Please help me triage this bug.
+        The issue started after I deployed a new module yesterday.
+    assert:
+      - type: contains
+        value: "## Bug Triage Report"
+      - type: contains
+        value: "**Symptom**"
+      - type: contains
+        value: "**Root Cause**"
+      - type: contains
+        value: "**Verification**"
+      # exception.log must be part of the investigation
+      - type: contains
+        value: "exception.log"
+      - type: contains
+        value: "**Investigated**"
+      - type: contains
+        value: "**Fix Applied"
+      - type: contains
+        value: "**Prevention**"
+      - type: llm-rubric
+        value: >
+          The Bug Triage Report includes all five required sections (Symptom,
+          Investigated, Root Cause, Fix Applied/Recommended, Verification, Prevention),
+          and the Investigated section references checking exception.log as a first step.
+
+  - description: "404 triage: routes.xml checklist followed, module:status checked"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-bug-triage/SKILL.md"
+      user_input: >
+        404 error on /vendor/mymodule/index/index after deploying my new module.
+        The module is in app/code/Vendor/MyModule. Please triage this.
+    assert:
+      - type: contains
+        value: "## Bug Triage Report"
+      - type: contains
+        value: "**Symptom**"
+      - type: contains
+        value: "**Root Cause**"
+      - type: contains
+        value: "**Verification**"
+      - type: contains
+        value: "routes.xml"
+      - type: contains
+        value: "module:status"
+      - type: contains
+        value: "**Investigated**"
+      - type: llm-rubric
+        value: >
+          The Bug Triage Report's Investigated section includes checking routes.xml
+          and running module:status to verify the module is enabled.
+
+  - description: "Agent refuses to edit vendor/ files, redirects to plugin or preference"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-bug-triage/SKILL.md"
+      user_input: >
+        The bug is in vendor/magento/module-catalog/Model/Product.php at line 42.
+        The method getPrice() returns the wrong value. Can you edit that file to fix it?
+    assert:
+      - type: contains
+        value: "## Bug Triage Report"
+      - type: contains
+        value: "**Symptom**"
+      - type: contains
+        value: "**Root Cause**"
+      - type: contains
+        value: "**Verification**"
+      # Must refuse to edit vendor files
+      - type: not-contains
+        value: "Edit vendor/"
+      - type: not-contains
+        value: "edit vendor/"
+      # Must suggest the correct extensibility mechanisms
+      - type: regex
+        value: "plugin|preference|observer"
+      - type: llm-rubric
+        value: >
+          The agent explicitly refuses to modify vendor/ files and instead recommends
+          using a plugin, preference, or observer to override or intercept the
+          problematic behaviour without touching vendor code.
+
+  - description: "DI exception: root cause confirmed before fix is proposed"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-bug-triage/SKILL.md"
+      user_input: >
+        I'm getting this error: "Intercepted class Vendor\Module\Model\Service does not exist.
+        Please check that all interfaces and dependencies are correct." Please triage.
+    assert:
+      - type: contains
+        value: "## Bug Triage Report"
+      - type: contains
+        value: "**Symptom**"
+      - type: contains
+        value: "**Root Cause**"
+      - type: contains
+        value: "**Verification**"
+      - type: contains
+        value: "setup:di:compile"
+      # rm -rf generated is dangerous and incorrect — setup:di:compile is the right fix
+      - type: not-contains
+        value: "rm -rf generated"
+      - type: llm-rubric
+        value: >
+          The Bug Triage Report identifies the root cause as a DI compilation issue
+          before recommending setup:di:compile as the fix, and the Root Cause section
+          explains why the error occurs (missing compiled interceptors).
+
+  - description: "Cron not running: cron:install fix recommended, all report sections present"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-bug-triage/SKILL.md"
+      user_input: >
+        My Magento cron jobs are not running. Newsletter emails aren't going out and
+        product price indexing is stuck in scheduled mode. Please triage.
+    assert:
+      - type: contains
+        value: "## Bug Triage Report"
+      - type: contains
+        value: "**Symptom**"
+      - type: contains
+        value: "**Root Cause**"
+      - type: contains
+        value: "**Verification**"
+      - type: contains
+        value: "cron:install"
+      - type: contains
+        value: "**Fix Applied"
+      - type: contains
+        value: "**Prevention**"
+      # crontab verification is part of the fix workflow
+      - type: regex
+        value: "crontab|cron"
+      - type: llm-rubric
+        value: >
+          The Bug Triage Report recommends running bin/magento cron:install to set up
+          the crontab, includes verification steps (e.g. crontab -l), and all five
+          required report sections are present.

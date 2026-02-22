@@ -1,0 +1,117 @@
+import:
+  - ../promptfooconfig.yaml
+
+description: "Tests for skills/magento-test.md"
+
+prompts:
+  - file://../prompts/skill-wrapper.json
+
+providers:
+  - file://../providers.yaml
+
+defaultTest:
+  assert:
+    - type: latency
+      threshold: 120000
+    - type: javascript
+      value: "output.trim().length > 50"
+
+tests:
+  - description: "Unit test has correct structure: TestCase, setUp, mock, assert"
+    vars:
+      system_prompt: "file://../../skills/magento-test/SKILL.md"
+      user_input: |
+        Write a unit test for a service class `ProductPriceCalculator` that has a method
+        `calculate(Product $product, float $qty): float`. It depends on a
+        `TaxCalculatorInterface` injected via constructor.
+    assert:
+      - type: contains
+        value: "TestCase"
+      - type: contains
+        value: "setUp"
+      - type: contains
+        value: "createMock"
+      - type: contains
+        value: "declare(strict_types=1)"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: llm-rubric
+        value: |
+          The test class must extend PHPUnit\Framework\TestCase, have a setUp() method
+          that creates a mock of TaxCalculatorInterface and instantiates the class under
+          test, and have at least one test method that calls calculate() and asserts the
+          return value. The mock must use createMock() or getMockBuilder().
+
+  - description: "getMockBuilder with onlyMethods for partial mocking of concrete classes"
+    vars:
+      system_prompt: "file://../../skills/magento-test/SKILL.md"
+      user_input: |
+        I need to partially mock `Magento\Catalog\Model\Product` — I want to stub just the
+        `getPrice()` method while keeping all other methods as real implementations. How do I do this?
+    assert:
+      - type: contains
+        value: "getMockBuilder"
+      - type: contains
+        value: "disableOriginalConstructor"
+      - type: contains
+        value: "onlyMethods"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: llm-rubric
+        value: |
+          The response must show getMockBuilder(Product::class)->disableOriginalConstructor()->onlyMethods(['getPrice'])->getMock()
+          for partial mocking. It must explain that getMockBuilder() is required here (not createMock())
+          because onlyMethods() is needed to keep real implementations for all methods except getPrice().
+          It must show disableOriginalConstructor() being called explicitly, since getMockBuilder() does
+          NOT add it automatically (unlike createMock() which always disables the constructor).
+
+  - description: "Integration test uses @magentoDataFixture and @magentoDbIsolation"
+    vars:
+      system_prompt: "file://../../skills/magento-test/SKILL.md"
+      user_input: |
+        Write an integration test that creates a product, saves it, then retrieves it
+        by SKU and asserts the price is correct.
+    assert:
+      - type: contains
+        value: "@magentoDataFixture"
+      - type: contains
+        value: "Bootstrap::getObjectManager"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: llm-rubric
+        value: |
+          The integration test must use Bootstrap::getObjectManager() to get the real
+          object manager (this is valid in integration tests), must have @magentoDataFixture
+          annotation or equivalent fixture loading, and should include @magentoDbIsolation
+          enabled to rollback after the test. It must NOT use createMock() to fake the
+          ProductRepository — integration tests use real implementations.
+
+  - description: "Private methods are not tested directly"
+    vars:
+      system_prompt: "file://../../skills/magento-test/SKILL.md"
+      user_input: |
+        How do I test a private method `calculateDiscount()` in my service class?
+    assert:
+      - type: llm-rubric
+        value: |
+          The response must NOT recommend using Reflection to access and directly test
+          the private method. It must explain that private methods should be tested
+          indirectly through the public API that calls them, and that if a private
+          method is complex enough to need direct testing it is a signal it should be
+          extracted to a separate class.
+
+  - description: "Correct phpunit command paths for unit vs integration tests"
+    vars:
+      system_prompt: "file://../../skills/magento-test/SKILL.md"
+      user_input: |
+        How do I run my unit tests and integration tests for Magento?
+    assert:
+      - type: contains
+        value: "vendor/bin/phpunit"
+      - type: llm-rubric
+        value: |
+          The response must show separate commands for unit tests (using the unit phpunit
+          config, e.g. dev/tests/unit/phpunit.xml.dist or similar) and integration tests
+          (dev/tests/integration/phpunit.xml.dist). It must mention that integration tests
+          require a database connection and separate configuration. The paths to the config
+          files must point inside the dev/tests/ directory structure.

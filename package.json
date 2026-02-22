@@ -1,0 +1,32 @@
+{
+  "name": "magento-ai-toolkit-tests",
+  "version": "1.0.0",
+  "description": "Promptfoo test suite for magento-ai-toolkit skills and agents",
+  "private": true,
+  "scripts": {
+    "test": "npm run test:skills && npm run test:agents",
+    "test:skills": "npx promptfoo@latest eval --config tests/skills/magento-plugin.yaml --config tests/skills/magento-db-schema.yaml --config tests/skills/magento-debug.yaml --config tests/skills/magento-observer.yaml --config tests/skills/magento-deploy.yaml --config tests/skills/magento-cli-command.yaml --config tests/skills/magento-test.yaml --config tests/skills/magento-api.yaml --config tests/skills/magento-hyva.yaml --config tests/skills/magento-infra.yaml --max-concurrency 2",
+    "test:agents": "npx promptfoo@latest eval --config tests/agents/magento-bug-triage.yaml --config tests/agents/magento-code-review.yaml --config tests/agents/magento-deployment.yaml --config tests/agents/magento-performance-auditor.yaml --config tests/agents/magento-api-builder.yaml --config tests/agents/magento-module-generator.yaml --max-concurrency 1",
+    "test:plugin": "npx promptfoo@latest eval --config tests/skills/magento-plugin.yaml --max-concurrency 2",
+    "test:db-schema": "npx promptfoo@latest eval --config tests/skills/magento-db-schema.yaml --max-concurrency 2",
+    "test:debug": "npx promptfoo@latest eval --config tests/skills/magento-debug.yaml --max-concurrency 2",
+    "test:observer": "npx promptfoo@latest eval --config tests/skills/magento-observer.yaml --max-concurrency 2",
+    "test:deploy": "npx promptfoo@latest eval --config tests/skills/magento-deploy.yaml --max-concurrency 2",
+    "test:cli-command": "npx promptfoo@latest eval --config tests/skills/magento-cli-command.yaml --max-concurrency 2",
+    "test:test": "npx promptfoo@latest eval --config tests/skills/magento-test.yaml --max-concurrency 2",
+    "test:api": "npx promptfoo@latest eval --config tests/skills/magento-api.yaml --max-concurrency 2",
+    "test:hyva": "npx promptfoo@latest eval --config tests/skills/magento-hyva.yaml --max-concurrency 2",
+    "test:infra": "npx promptfoo@latest eval --config tests/skills/magento-infra.yaml --max-concurrency 2",
+    "test:bug-triage": "npx promptfoo@latest eval --config tests/agents/magento-bug-triage.yaml --max-concurrency 1",
+    "test:code-review": "npx promptfoo@latest eval --config tests/agents/magento-code-review.yaml --max-concurrency 1",
+    "test:deployment": "npx promptfoo@latest eval --config tests/agents/magento-deployment.yaml --max-concurrency 1",
+    "test:performance": "npx promptfoo@latest eval --config tests/agents/magento-performance-auditor.yaml --max-concurrency 1",
+    "test:api-builder": "npx promptfoo@latest eval --config tests/agents/magento-api-builder.yaml --max-concurrency 1",
+    "test:module-generator": "npx promptfoo@latest eval --config tests/agents/magento-module-generator.yaml --max-concurrency 1",
+    "test:ci": "npm run test:skills -- --output results-skills.json && npm run test:agents -- --output results-agents.json",
+    "test:view": "npx promptfoo@latest view"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,8 @@
+- id: anthropic:messages:claude-sonnet-4-6
+  config:
+    temperature: 0
+    max_tokens: 8192
+- id: openai:gpt-4o
+  config:
+    temperature: 0
+    max_tokens: 8192

@@ -1,0 +1,126 @@
+import:
+  - ../promptfooconfig.yaml
+
+description: Tests for skills/magento-plugin.md
+
+prompts:
+  - file://../prompts/skill-wrapper.json
+
+providers:
+  - file://../providers.yaml
+
+defaultTest:
+  assert:
+    - type: latency
+      threshold: 120000
+    - type: javascript
+      value: "output.trim().length > 50"
+
+tests:
+  - description: "Before plugin returns array of args, not void"
+    vars:
+      system_prompt: "file://../../skills/magento-plugin/SKILL.md"
+      user_input: >
+        Write a before plugin on Magento\Catalog\Model\Product for the setName method.
+        It should trim whitespace from the name argument before it is set.
+    assert:
+      - type: contains
+        value: "declare(strict_types=1)"
+      - type: contains
+        value: "beforeSetName"
+      # Before plugins MUST return an array (or null), never void when modifying args
+      - type: contains
+        value: "array"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: llm-rubric
+        value: >
+          The before plugin method signature accepts $subject and $name, and returns
+          an array of arguments (not void), which is the correct contract for before plugins.
+
+  - description: "After plugin modifies return via $result, never calls $proceed"
+    vars:
+      system_prompt: "file://../../skills/magento-plugin/SKILL.md"
+      user_input: >
+        Write an after plugin on Magento\Catalog\Model\Product for the getName method
+        that appends " - SALE" to the product name.
+    assert:
+      - type: contains
+        value: "declare(strict_types=1)"
+      - type: contains
+        value: "afterGetName"
+      # $result is the original return value — mandatory second parameter
+      - type: contains
+        value: "$result"
+      # After plugins must NOT call $proceed — that is only for around plugins
+      - type: not-contains
+        value: "$proceed"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: llm-rubric
+        value: >
+          The after plugin receives $result as its second parameter and returns
+          the modified string. It does not call $proceed().
+
+  - description: "Around plugin always calls $proceed() to preserve the call chain"
+    vars:
+      system_prompt: "file://../../skills/magento-plugin/SKILL.md"
+      user_input: >
+        Write an around plugin on Magento\Catalog\Model\Product for the save method
+        that logs a message before and after the save operation.
+    assert:
+      - type: contains
+        value: "declare(strict_types=1)"
+      - type: contains
+        value: "aroundSave"
+      # callable $proceed is the mandatory second parameter for around plugins
+      - type: contains
+        value: "callable $proceed"
+      # $proceed() must be called — omitting it silently breaks the call chain
+      - type: contains
+        value: "$proceed("
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: llm-rubric
+        value: >
+          The around plugin calls $proceed(...$args) (or equivalent) to invoke the
+          original method, and returns the result from $proceed.
+
+  - description: "di.xml uses sortOrder and area-specific file path; plugin class does not extend"
+    vars:
+      system_prompt: "file://../../skills/magento-plugin/SKILL.md"
+      user_input: >
+        Generate the di.xml plugin declaration for a plugin that should only apply
+        on the Magento frontend. The plugin targets Magento\Catalog\Model\Product.
+    assert:
+      - type: contains
+        value: "sortOrder"
+      # Scope to frontend only — must mention etc/frontend/di.xml
+      - type: regex
+        value: "etc/frontend"
+      # Plugin classes are plain classes — they do NOT extend or implement anything
+      - type: not-contains
+        value: "extends"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: llm-rubric
+        value: >
+          The response specifies that the di.xml file should be placed under
+          etc/frontend/ (not the global etc/) to limit the plugin to the frontend area,
+          and includes a sortOrder attribute on the plugin element.
+
+  - description: "Skill recommends observer for event-reaction use case, not a plugin"
+    vars:
+      system_prompt: "file://../../skills/magento-plugin/SKILL.md"
+      user_input: >
+        I want to run some custom code whenever a Magento product is saved.
+        Should I use a plugin or an observer for this?
+    assert:
+      # Must recommend observer for reacting to save events
+      - type: regex
+        value: "observer|events\\.xml"
+      - type: llm-rubric
+        value: >
+          The response recommends using an observer (via events.xml) rather than a plugin
+          for reacting to save/load/delete lifecycle events, and explains why observers
+          are preferable in this scenario.

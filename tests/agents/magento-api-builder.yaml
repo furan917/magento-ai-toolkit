@@ -1,0 +1,130 @@
+import:
+  - ../promptfooconfig.yaml
+
+description: "Tests for agents/magento-api-builder.md"
+
+prompts:
+  - file://../prompts/agent-wrapper.json
+
+providers:
+  - file://../providers.yaml
+
+defaultTest:
+  assert:
+    - type: latency
+      threshold: 150000
+    - type: javascript
+      value: "output.trim().length > 50"
+
+tests:
+  - description: "Complete file set generated for a REST endpoint"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-api-builder/SKILL.md"
+      user_input: |
+        Build a REST API for a Loyalty Points module. Customers can GET their points
+        balance at /V1/vendor/loyalty/mine and admins can POST to adjust balances at
+        /V1/vendor/loyalty/:customerId.
+    assert:
+      - type: contains
+        value: "## API Builder"
+      - type: contains
+        value: "webapi.xml"
+      - type: contains
+        value: "Api\\"
+      - type: contains
+        value: "di.xml"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: llm-rubric
+        value: |
+          The output must include all required files: webapi.xml with the two routes,
+          an Api/ interface (e.g. LoyaltyRepositoryInterface), a Model implementation,
+          and di.xml preference mapping interface to implementation. The self/anonymous
+          resource should be used for customer-facing endpoints and an ACL resource for
+          admin endpoints. A file manifest must list every generated file.
+
+  - description: "Agent handles ambiguous authentication scope transparently"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-api-builder/SKILL.md"
+      user_input: |
+        Create a REST API endpoint for store announcements. Announcements have a title,
+        body, and active flag.
+    assert:
+      - type: llm-rubric
+        value: |
+          The request does not specify authentication scope. The agent must handle this
+          transparently by doing ONE of the following:
+          (a) Ask a clarifying question about who can create, read, update, and delete
+              announcements (admin-only vs public read vs customer access) before generating, OR
+          (b) Generate the API but explicitly document the assumed auth scope for EACH
+              endpoint (e.g. "Assuming admin token for all operations — adjust webapi.xml
+              resources if public read is needed") and make clear this can be changed.
+          The agent must NOT silently generate a webapi.xml without any mention of the
+          auth decision. Silent assumption with no documentation is the only failure mode.
+
+  - description: "Generated file manifest is present in output"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-api-builder/SKILL.md"
+      user_input: |
+        Build a complete REST CRUD API for a Subscription entity: create, read, list,
+        update, and delete. The entity has id, customer_id, plan_name, and expires_at fields.
+    assert:
+      - type: contains
+        value: "## API Builder"
+      - type: contains
+        value: "webapi.xml"
+      - type: contains
+        value: "db_schema.xml"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: llm-rubric
+        value: |
+          The output must include an explicit file manifest section that lists every
+          file being generated with its path. For a CRUD entity, this must include at
+          minimum: Api/SubscriptionInterface.php, Api/SubscriptionRepositoryInterface.php,
+          Model/Subscription.php, Model/ResourceModel/Subscription.php,
+          Model/ResourceModel/Subscription/Collection.php, db_schema.xml, webapi.xml,
+          di.xml. Missing any of these means the CRUD API will not function.
+
+  - description: "SearchCriteria with list endpoint includes companion example"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-api-builder/SKILL.md"
+      user_input: |
+        Add an admin-only GET list endpoint for subscriptions with filtering support.
+    assert:
+      - type: contains
+        value: "## API Builder"
+      - type: contains
+        value: "SearchCriteriaInterface"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: llm-rubric
+        value: |
+          For the list endpoint, the response must show: the interface method accepting
+          SearchCriteriaInterface, the SearchResultsInterface return type, and a concrete
+          example of how to call the endpoint with searchCriteria query parameters (filter
+          by field, page_size, current_page). This companion usage example is required
+          to make the endpoint usable.
+
+  - description: "GraphQL resolver branch includes schema.graphqls and resolver class"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-api-builder/SKILL.md"
+      user_input: |
+        Build a GraphQL API for the Subscription entity instead of REST. I need a query
+        to get a subscription by ID and a mutation to cancel it.
+    assert:
+      - type: contains
+        value: "## API Builder"
+      - type: contains
+        value: "schema.graphqls"
+      - type: contains
+        value: "ResolverInterface"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: llm-rubric
+        value: |
+          The response must include schema.graphqls with the Query and Mutation type
+          definitions, two resolver classes (one for get, one for cancel mutation),
+          and the di.xml type configuration declaring the resolvers. The mutation resolver
+          must handle input validation and return a typed response object (not raw boolean).
+          The resolvers must implement Magento\Framework\GraphQl\Query\ResolverInterface.

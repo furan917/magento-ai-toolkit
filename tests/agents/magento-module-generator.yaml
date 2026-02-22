@@ -1,0 +1,155 @@
+import:
+  - ../promptfooconfig.yaml
+
+description: "Tests for agents/magento-module-generator.md"
+
+prompts:
+  - file://../prompts/agent-wrapper.json
+
+providers:
+  - file://../providers.yaml
+
+defaultTest:
+  assert:
+    - type: latency
+      threshold: 150000
+    - type: javascript
+      value: "output.trim().length > 50"
+
+tests:
+  - description: "Vague input triggers clarifying questions, not file generation"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-module-generator/SKILL.md"
+      user_input: |
+        Create a Magento module for managing subscriptions.
+    assert:
+      - type: not-contains
+        value: "registration.php"
+      - type: not-contains
+        value: "module.xml"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: not-contains
+        value: "InstallSchemaInterface"
+      - type: not-contains
+        value: "UpgradeSchemaInterface"
+      - type: llm-rubric
+        value: |
+          The agent must NOT generate any files for this vague request. It must ask
+          clarifying questions covering at minimum: the Vendor and Module name, what
+          entity fields the Subscription entity needs, which Magento modules it depends on
+          (Catalog, Customer, etc.), and which features are required (REST API, admin grid,
+          cron, observer). The response should be questions only — no PHP or XML code.
+
+  - description: "Complete spec generates all Phase 1 and Phase 2 files"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-module-generator/SKILL.md"
+      user_input: |
+        Generate a Magento module with these specs:
+        - Vendor: Acme, Module: Subscription
+        - Entity: Subscription with fields: id (int PK), customer_id (int FK), plan (varchar 64),
+          status (smallint), created_at (timestamp), expires_at (date)
+        - Features: db_schema, REST API (CRUD), admin grid to list subscriptions
+        - Dependencies: Magento_Customer, Magento_Backend, Magento_Ui
+        - Target path: app/code/Acme/Subscription
+    assert:
+      - type: contains
+        value: "registration.php"
+      - type: contains
+        value: "module.xml"
+      - type: contains
+        value: "db_schema.xml"
+      - type: contains
+        value: "declare(strict_types=1)"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: not-contains
+        value: "InstallSchemaInterface"
+      - type: not-contains
+        value: "UpgradeSchemaInterface"
+      - type: llm-rubric
+        value: |
+          With a complete specification provided, the agent must generate ALL of:
+          registration.php, module.xml (with correct sequence dependencies), db_schema.xml
+          (with all specified columns, PK, FK to customer_entity, index on customer_id),
+          Api/SubscriptionInterface.php, Api/SubscriptionRepositoryInterface.php,
+          Model/Subscription.php, Model/ResourceModel/Subscription.php,
+          Model/ResourceModel/Subscription/Collection.php, webapi.xml, di.xml.
+          The module name in registration.php must match module.xml exactly: Acme_Subscription.
+
+  - description: "Only confirmed features are generated"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-module-generator/SKILL.md"
+      user_input: |
+        Generate a module: Vendor=Demo, Module=Logger.
+        Features needed: ONLY a custom logger (Monolog handler). Nothing else.
+        No REST API, no admin grid, no cron jobs.
+    assert:
+      - type: not-contains
+        value: "webapi.xml"
+      - type: not-contains
+        value: "crontab.xml"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: not-contains
+        value: "InstallSchemaInterface"
+      - type: not-contains
+        value: "UpgradeSchemaInterface"
+      - type: llm-rubric
+        value: |
+          The agent must generate ONLY files relevant to a custom logger: registration.php,
+          module.xml, di.xml (to configure the virtual type or preference for the logger),
+          and the Logger/Handler class. It must NOT generate webapi.xml, crontab.xml,
+          admin UI files, or any other feature not requested. Scope must be strictly
+          limited to what was confirmed.
+
+  - description: "Generated PHP code uses constructor injection, not anti-patterns"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-module-generator/SKILL.md"
+      user_input: |
+        Generate a complete Magento module: Vendor=Test, Module=Example.
+        Entity: Example with fields: id (int PK), name (varchar 255), status (smallint default 1), created_at (timestamp).
+        Features: seed initial records via data patch, REST read endpoint (GET by ID and GET list).
+    assert:
+      - type: contains
+        value: "DataPatchInterface"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: not-contains
+        value: "InstallSchemaInterface"
+      - type: not-contains
+        value: "UpgradeSchemaInterface"
+      - type: llm-rubric
+        value: |
+          All generated PHP classes must use constructor injection for dependencies.
+          The data patch must implement DataPatchInterface (not InstallData.php).
+          The repository implementation must not use raw SQL queries — it must use
+          the ResourceModel and Collection. No class may use ObjectManager::getInstance(),
+          global state, or static calls to retrieve services.
+
+  - description: "Report completeness: file manifest and install commands present"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-module-generator/SKILL.md"
+      user_input: |
+        Generate a minimal module: Vendor=Foo, Module=Bar. No features beyond the
+        bare minimum to register and enable the module.
+    assert:
+      - type: contains
+        value: "registration.php"
+      - type: contains
+        value: "module.xml"
+      - type: contains
+        value: "setup:upgrade"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: not-contains
+        value: "InstallSchemaInterface"
+      - type: not-contains
+        value: "UpgradeSchemaInterface"
+      - type: llm-rubric
+        value: |
+          The output must include a file manifest listing all generated files with their
+          paths, followed by the install commands: bin/magento module:enable Foo_Bar,
+          bin/magento setup:upgrade, and bin/magento cache:flush. Even for a minimal
+          module, all three commands must be present. The module name in the commands
+          must match the Vendor_Module format exactly.

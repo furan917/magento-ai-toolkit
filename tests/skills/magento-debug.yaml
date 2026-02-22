@@ -1,0 +1,125 @@
+import:
+  - ../promptfooconfig.yaml
+
+description: Tests for skills/magento-debug.md
+
+prompts:
+  - file://../prompts/skill-wrapper.json
+
+providers:
+  - file://../providers.yaml
+
+defaultTest:
+  assert:
+    - type: latency
+      threshold: 120000
+    - type: javascript
+      value: "output.trim().length > 50"
+    # Never suggest editing vendor/ files — always use plugin/preference/observer
+    - type: not-contains
+      value: "edit vendor/"
+    - type: not-contains
+      value: "modify vendor/"
+
+tests:
+  - description: "White page symptom directs to exception.log and var/report/"
+    vars:
+      system_prompt: "file://../../skills/magento-debug/SKILL.md"
+      user_input: >
+        My Magento store is showing a completely white / blank page. No error message,
+        just an empty screen. How do I debug this?
+    assert:
+      # Exception log is the primary source for white page debugging
+      - type: contains
+        value: "var/log/exception.log"
+      # Error reports contain detailed stack traces
+      - type: contains
+        value: "var/report/"
+      - type: llm-rubric
+        value: >
+          The response instructs the user to check var/log/exception.log and
+          var/report/ as the first diagnostic steps for a white page, and explains
+          what information each location contains.
+
+  - description: "404 on custom page leads to routes.xml, module:status, and frontName check"
+    vars:
+      system_prompt: "file://../../skills/magento-debug/SKILL.md"
+      user_input: >
+        I'm getting a 404 error on my custom frontend page /mymodule/index/index
+        after deploying a new module. The route should exist.
+    assert:
+      # Routes.xml is where frontend routes are declared
+      - type: contains
+        value: "routes.xml"
+      # Module may be disabled
+      - type: contains
+        value: "module:status"
+      # frontName in routes.xml maps the URL segment to the module
+      - type: contains
+        value: "frontName"
+      - type: llm-rubric
+        value: >
+          The response includes checking routes.xml structure, verifying the module
+          is enabled via module:status, and confirming the frontName matches the
+          URL segment.
+
+  - description: "Class not found / DI error resolved by setup:di:compile clearing generated/"
+    vars:
+      system_prompt: "file://../../skills/magento-debug/SKILL.md"
+      user_input: >
+        I'm getting "Class Vendor\Module\Model\Service does not exist" error after
+        adding a new class to my module. The file exists on disk.
+    assert:
+      # DI compilation generates the interceptors and proxies in generated/
+      - type: contains
+        value: "setup:di:compile"
+      # generated/ directory holds compiled DI artifacts
+      - type: contains
+        value: "generated/"
+      - type: llm-rubric
+        value: >
+          The response identifies this as a DI compilation issue, instructs the user
+          to run setup:di:compile, and explains that the generated/ directory holds
+          compiled class proxies and interceptors.
+
+  - description: "ObjectManager direct use is identified as anti-pattern; fix is constructor injection"
+    vars:
+      system_prompt: "file://../../skills/magento-debug/SKILL.md"
+      user_input: >
+        I found this code in my custom module: $product = ObjectManager::getInstance()->create(Product::class);
+        Is this a problem? My module seems to work but I want to know if it's correct.
+    assert:
+      # Must flag ObjectManager usage explicitly
+      - type: contains
+        value: "ObjectManager::getInstance"
+      # The fix is always constructor injection
+      - type: contains
+        value: "constructor"
+      - type: llm-rubric
+        value: >
+          The response clearly identifies ObjectManager direct usage as an anti-pattern
+          that bypasses the DI container, and provides the correct fix using constructor
+          injection to declare the dependency.
+      # Should not say it's fine or acceptable
+      - type: not-contains
+        value: "it's fine"
+
+  - description: "Search returns no results → reindex catalogsearch_fulltext and check OpenSearch"
+    vars:
+      system_prompt: "file://../../skills/magento-debug/SKILL.md"
+      user_input: >
+        My Magento search returns no results for any query, including searches for
+        product names that definitely exist in the catalog.
+    assert:
+      # Must reference the search indexer specifically
+      - type: contains
+        value: "catalogsearch_fulltext"
+      - type: contains
+        value: "indexer:reindex"
+      # OpenSearch (or Elasticsearch) is the search engine in Magento 2.4+
+      - type: regex
+        value: "OpenSearch|Elasticsearch"
+      - type: llm-rubric
+        value: >
+          The response recommends reindexing the catalogsearch_fulltext indexer and
+          checking the OpenSearch/Elasticsearch configuration and connectivity.

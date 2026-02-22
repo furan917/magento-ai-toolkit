@@ -1,0 +1,120 @@
+import:
+  - ../promptfooconfig.yaml
+
+description: "Tests for skills/magento-hyva.md"
+
+prompts:
+  - file://../prompts/skill-wrapper.json
+
+providers:
+  - file://../providers.yaml
+
+defaultTest:
+  assert:
+    - type: latency
+      threshold: 120000
+    - type: javascript
+      value: "output.trim().length > 50"
+
+tests:
+  - description: "Alpine.js x-data component used instead of KnockoutJS"
+    vars:
+      system_prompt: "file://../../skills/magento-hyva/SKILL.md"
+      user_input: |
+        Create a Hyva product quantity selector that increments and decrements a count,
+        with a minimum of 1 and maximum from the product's stock.
+    assert:
+      - type: contains
+        value: "x-data"
+      - type: regex
+        value: "x-on:|@click|@\\w"
+        # Alpine.js supports both x-on:click and @click shorthand
+      - type: not-contains
+        value: "ko.observable"
+      - type: not-contains
+        value: "require("
+      - type: not-contains
+        value: "jQuery"
+      - type: llm-rubric
+        value: |
+          The response must use Alpine.js syntax (x-data, x-on or @click, x-text or :value)
+          for the interactive quantity selector. It must NOT use KnockoutJS (ko.observable,
+          data-bind), RequireJS (require()), or jQuery ($()). The component should manage
+          qty state in the x-data object.
+
+  - description: "ViewModel implements ArgumentInterface for Hyva templates"
+    vars:
+      system_prompt: "file://../../skills/magento-hyva/SKILL.md"
+      user_input: |
+        I need a ViewModel to pass formatted product price data to a Hyva .phtml template.
+    assert:
+      - type: contains
+        value: "ArgumentInterface"
+      - type: contains
+        value: "ViewModel"
+      - type: llm-rubric
+        value: |
+          The ViewModel class must implement Magento\Framework\View\Element\Block\ArgumentInterface.
+          It must NOT extend AbstractBlock. The layout XML must inject it as an argument
+          (<argument name="view_model" xsi:type="object">), and the .phtml template must
+          retrieve it via $block->getData('view_model') or $block->getViewModel().
+
+  - description: "GraphQL fetch used for dynamic data in Hyva, with Alpine state"
+    vars:
+      system_prompt: "file://../../skills/magento-hyva/SKILL.md"
+      user_input: |
+        In a Hyva theme, fetch the current customer's wishlist items via GraphQL
+        and display them in an Alpine component.
+    assert:
+      - type: contains
+        value: "fetch("
+      - type: contains
+        value: "graphql"
+        # case-insensitive or explicit /graphql endpoint
+      - type: not-contains
+        value: "ko.observable"
+      - type: not-contains
+        value: "require.config("
+        # catches RequireJS AMD loader config — not Node.js CommonJS require() in tailwind.config.js
+      - type: not-contains
+        value: "jQuery"
+      - type: llm-rubric
+        value: |
+          The response must show using the native fetch() API (not jQuery.ajax or axios)
+          to POST to the GraphQL endpoint (/graphql), include the Authorization header
+          if needed, parse the JSON response, and store the result in Alpine.js reactive
+          state (x-data property). It must not use KnockoutJS or RequireJS for this.
+
+  - description: "Output escaped with $escaper in Hyva templates"
+    vars:
+      system_prompt: "file://../../skills/magento-hyva/SKILL.md"
+      user_input: |
+        Display a product's name and description in a Hyva .phtml template. The description
+        can contain HTML.
+    assert:
+      - type: contains
+        value: "$escaper"
+      - type: llm-rubric
+        value: |
+          The response must use $escaper->escapeHtml() for the product name (plain text
+          output) and either $escaper->escapeHtml() with allowed tags or explicit note
+          that description HTML requires careful handling. It must not output raw PHP
+          variables directly into HTML attributes or text nodes without escaping.
+
+  - description: "Tailwind content paths updated for custom Hyva templates"
+    vars:
+      system_prompt: "file://../../skills/magento-hyva/SKILL.md"
+      user_input: |
+        I've added a new custom module with Hyva .phtml templates in
+        app/code/Vendor/Module/view/frontend/templates/. My Tailwind classes aren't
+        being picked up. What do I need to do?
+    assert:
+      - type: contains
+        value: "tailwind.config.js"
+      - type: llm-rubric
+        value: |
+          The response must explain that the tailwind.config.js content array in the Hyva
+          theme must include a path pattern covering the module's template directory
+          (e.g. app/code/Vendor/Module/view/frontend/templates/**/*.phtml). It must mention
+          that after updating tailwind.config.js, the CSS must be recompiled with the
+          appropriate npm/node command for Hyva.

@@ -1,0 +1,117 @@
+import:
+  - ../promptfooconfig.yaml
+
+description: "Tests for skills/magento-api.md"
+
+prompts:
+  - file://../prompts/skill-wrapper.json
+
+providers:
+  - file://../providers.yaml
+
+defaultTest:
+  assert:
+    - type: latency
+      threshold: 120000
+    - type: javascript
+      value: "output.trim().length > 50"
+
+tests:
+  - description: "webapi.xml references Api/ interface, not Model directly"
+    vars:
+      system_prompt: "file://../../skills/magento-api/SKILL.md"
+      user_input: |
+        Create a REST endpoint GET /V1/vendor/widgets/:id that returns a widget by ID.
+    assert:
+      - type: contains
+        value: "webapi.xml"
+      - type: contains
+        value: "Api\\"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: llm-rubric
+        value: |
+          The webapi.xml service class attribute must point to an interface in the Api/
+          namespace (e.g. Vendor\Module\Api\WidgetRepositoryInterface), never directly to
+          a Model class. The response must also generate or mention the corresponding
+          interface with a getById() method.
+
+  - description: "SearchCriteria used for list endpoints, not raw collection"
+    vars:
+      system_prompt: "file://../../skills/magento-api/SKILL.md"
+      user_input: |
+        I need a REST API endpoint that lists widgets with filtering by status and
+        pagination support.
+    assert:
+      - type: contains
+        value: "SearchCriteriaInterface"
+      - type: contains
+        value: "SearchResultsInterface"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: llm-rubric
+        value: |
+          The list method signature must accept SearchCriteriaInterface and return
+          SearchResultsInterface (or a typed extension of it). The response must NOT
+          use a raw collection or array return type for the list endpoint. The interface
+          PHPDoc must document @param and @return with the correct types.
+
+  - description: "GraphQL resolver returns array with model key, not object"
+    vars:
+      system_prompt: "file://../../skills/magento-api/SKILL.md"
+      user_input: |
+        Add a GraphQL query `widget(id: Int!): Widget` to my module.
+    assert:
+      - type: contains
+        value: "schema.graphqls"
+      - type: contains
+        value: "ResolverInterface"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: llm-rubric
+        value: |
+          The response must include schema.graphqls, a resolver class implementing
+          Magento\Framework\GraphQl\Query\ResolverInterface, and the resolve() method
+          must return an array (not an object). The resolver must use $args to get the
+          ID and must not expose Model internals directly — it should extract data into
+          an array before returning.
+
+  - description: "Api/ interface PHPDoc is mandatory for REST serialisation"
+    vars:
+      system_prompt: "file://../../skills/magento-api/SKILL.md"
+      user_input: |
+        Create the service contract interface for my WidgetRepository. Include all the
+        PHPDoc annotations Magento requires and explain why they are important.
+    assert:
+      - type: contains
+        value: "@return"
+      - type: contains
+        value: "@param"
+      - type: contains
+        value: "@throws"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: llm-rubric
+        value: |
+          Every method on the Api/ interface must have complete PHPDoc with @param,
+          @return, and @throws annotations using fully qualified class names. The response
+          must explain that Magento's REST serialiser uses these annotations to convert
+          PHP types to JSON — without them, the API will fail or return wrong types.
+
+  - description: "Bearer token authentication flow explained correctly"
+    vars:
+      system_prompt: "file://../../skills/magento-api/SKILL.md"
+      user_input: |
+        How do I authenticate with the Magento REST API from a third-party system?
+    assert:
+      - type: contains
+        value: "Bearer"
+      - type: contains
+        value: "/V1/integration/admin/token"
+      - type: llm-rubric
+        value: |
+          The response must describe the two-step authentication: first POST to
+          /V1/integration/admin/token (or /V1/integration/customer/token) with credentials
+          to get a token, then pass Authorization: Bearer {token} header on subsequent
+          requests. It should mention that admin tokens expire and token lifetime is
+          configurable in admin settings.

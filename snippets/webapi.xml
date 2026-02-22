@@ -1,0 +1,108 @@
+<?xml version="1.0"?>
+<!--
+    Magento 2 — webapi.xml Snippet Reference
+    File: app/code/Vendor/Module/etc/webapi.xml
+
+    Declares REST API endpoints. The service method referenced must be
+    declared on an Api/ interface — never point directly to a Model.
+
+    Base URL: /rest/V1/ (or /rest/{store_code}/V1/ for multi-store)
+
+    RESOURCE VALUES (who can call the endpoint):
+      anonymous                     — public, no authentication required
+      self                          — authenticated customer accessing their own data
+      Magento_Customer::customer    — any authenticated customer
+      Magento_Backend::store        — any authenticated admin user
+      Vendor_Module::entity_view    — admin with specific ACL resource (see acl.xml)
+-->
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Webapi:etc/webapi.xsd">
+
+    <!-- GET single resource by ID
+         URL: GET /V1/vendor/entities/:id
+         Calls: Vendor\Module\Api\EntityRepositoryInterface::getById($id) -->
+    <route url="/V1/vendor/entities/:id" method="GET">
+        <service class="Vendor\Module\Api\EntityRepositoryInterface" method="getById"/>
+        <resources>
+            <resource ref="Vendor_Module::entity_view"/>
+        </resources>
+    </route>
+
+    <!-- GET list with SearchCriteria filtering/sorting/pagination
+         URL: GET /V1/vendor/entities?searchCriteria[filter_groups][0][filters][0][field]=status&...
+         Calls: Vendor\Module\Api\EntityRepositoryInterface::getList($searchCriteria)
+         The method MUST accept SearchCriteriaInterface and return SearchResultsInterface. -->
+    <route url="/V1/vendor/entities" method="GET">
+        <service class="Vendor\Module\Api\EntityRepositoryInterface" method="getList"/>
+        <resources>
+            <resource ref="Vendor_Module::entity_view"/>
+        </resources>
+    </route>
+
+    <!-- POST create new resource
+         URL: POST /V1/vendor/entities
+         Body: JSON matching EntityInterface fields
+         Calls: Vendor\Module\Api\EntityRepositoryInterface::save($entity) -->
+    <route url="/V1/vendor/entities" method="POST">
+        <service class="Vendor\Module\Api\EntityRepositoryInterface" method="save"/>
+        <resources>
+            <resource ref="Vendor_Module::entity_save"/>
+        </resources>
+    </route>
+
+    <!-- PUT update existing resource
+         URL: PUT /V1/vendor/entities/:id
+         Body: JSON with fields to update
+         Calls: Vendor\Module\Api\EntityRepositoryInterface::save($entity) -->
+    <route url="/V1/vendor/entities/:id" method="PUT">
+        <service class="Vendor\Module\Api\EntityRepositoryInterface" method="save"/>
+        <resources>
+            <resource ref="Vendor_Module::entity_save"/>
+        </resources>
+    </route>
+
+    <!-- DELETE resource by ID
+         URL: DELETE /V1/vendor/entities/:id
+         Calls: Vendor\Module\Api\EntityRepositoryInterface::deleteById($id) -->
+    <route url="/V1/vendor/entities/:id" method="DELETE">
+        <service class="Vendor\Module\Api\EntityRepositoryInterface" method="deleteById"/>
+        <resources>
+            <resource ref="Vendor_Module::entity_delete"/>
+        </resources>
+    </route>
+
+    <!-- PUBLIC endpoint example (no auth required)
+         Use sparingly — any unauthenticated request can call this. -->
+    <route url="/V1/vendor/entities/public/:id" method="GET">
+        <service class="Vendor\Module\Api\EntityRepositoryInterface" method="getPublicById"/>
+        <resources>
+            <resource ref="anonymous"/>
+        </resources>
+    </route>
+
+    <!-- CUSTOMER-SCOPED endpoint — authenticated customer accessing their own data
+         "self" maps the authenticated customer ID automatically. -->
+    <route url="/V1/vendor/mine/entities" method="GET">
+        <service class="Vendor\Module\Api\EntityRepositoryInterface" method="getMyList"/>
+        <resources>
+            <resource ref="self"/>
+        </resources>
+    </route>
+
+</routes>
+
+<!--
+    AUTHENTICATION:
+      Admin token:    POST /V1/integration/admin/token    {"username":"..","password":".."}
+      Customer token: POST /V1/integration/customer/token {"username":"..","password":".."}
+
+      Then pass: Authorization: Bearer {token} on subsequent requests
+
+    SEARCHCRITERIA EXAMPLE (GET list with filter):
+      GET /V1/vendor/entities
+        ?searchCriteria[filter_groups][0][filters][0][field]=status
+        &searchCriteria[filter_groups][0][filters][0][value]=1
+        &searchCriteria[filter_groups][0][filters][0][condition_type]=eq
+        &searchCriteria[page_size]=20
+        &searchCriteria[current_page]=1
+-->

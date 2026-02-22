@@ -1,0 +1,5 @@
+assert:
+  - type: latency
+    threshold: 60000
+  - type: javascript
+    value: "output.trim().length > 50"
