@@ -1,3 +1,11 @@
+---
+name: magento-test
+description: "Generate Magento 2 unit and integration tests using PHPUnit. Use when writing tests for models, services, plugins, or observers."
+license: MIT
+metadata:
+  author: mage-os
+---
+
 # Skill: magento-test
 
 **Purpose**: Generate Magento 2 unit and integration tests using PHPUnit.
@@ -137,10 +145,17 @@ $mock->method('save')
 $mock->method('get')
      ->willThrowException(new \Magento\Framework\Exception\NoSuchEntityException());
 
-// Partial mock (only mock specific methods)
+// createMock() vs getMockBuilder()
+// createMock() automatically calls disableOriginalConstructor() — it does NOT run the real constructor.
+// Use getMockBuilder() when you ALSO need onlyMethods() or other fine-grained configuration.
+
+// createMock: quick full mock — constructor is disabled automatically
+$mock = $this->createMock(ProductRepositoryInterface::class);
+
+// getMockBuilder: use when you need onlyMethods() in addition to disabling the constructor
 $partial = $this->getMockBuilder(ConcreteClass::class)
+    ->disableOriginalConstructor()  // still required here — getMockBuilder does NOT add this automatically
     ->onlyMethods(['heavyMethod'])
-    ->disableOriginalConstructor()
     ->getMock();
 $partial->method('heavyMethod')->willReturn('mocked');
 ```

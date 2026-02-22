@@ -24,7 +24,7 @@ defaultTest:
 tests:
   - description: "White page symptom directs to exception.log and var/report/"
     vars:
-      system_prompt: "file://../../skills/magento-debug.md"
+      system_prompt: "file://../../skills/magento-debug/SKILL.md"
       user_input: >
         My Magento store is showing a completely white / blank page. No error message,
         just an empty screen. How do I debug this?
@@ -43,7 +43,7 @@ tests:
 
   - description: "404 on custom page leads to routes.xml, module:status, and frontName check"
     vars:
-      system_prompt: "file://../../skills/magento-debug.md"
+      system_prompt: "file://../../skills/magento-debug/SKILL.md"
       user_input: >
         I'm getting a 404 error on my custom frontend page /mymodule/index/index
         after deploying a new module. The route should exist.
@@ -65,7 +65,7 @@ tests:
 
   - description: "Class not found / DI error resolved by setup:di:compile clearing generated/"
     vars:
-      system_prompt: "file://../../skills/magento-debug.md"
+      system_prompt: "file://../../skills/magento-debug/SKILL.md"
       user_input: >
         I'm getting "Class Vendor\Module\Model\Service does not exist" error after
         adding a new class to my module. The file exists on disk.
@@ -84,7 +84,7 @@ tests:
 
   - description: "ObjectManager direct use is identified as anti-pattern; fix is constructor injection"
     vars:
-      system_prompt: "file://../../skills/magento-debug.md"
+      system_prompt: "file://../../skills/magento-debug/SKILL.md"
       user_input: >
         I found this code in my custom module: $product = ObjectManager::getInstance()->create(Product::class);
         Is this a problem? My module seems to work but I want to know if it's correct.
@@ -106,7 +106,7 @@ tests:
 
   - description: "Search returns no results → reindex catalogsearch_fulltext and check OpenSearch"
     vars:
-      system_prompt: "file://../../skills/magento-debug.md"
+      system_prompt: "file://../../skills/magento-debug/SKILL.md"
       user_input: >
         My Magento search returns no results for any query, including searches for
         product names that definitely exist in the catalog.

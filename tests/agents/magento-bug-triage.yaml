@@ -19,7 +19,7 @@ defaultTest:
 tests:
   - description: "White page triage: reads exception.log, all 5 report sections present"
     vars:
-      system_prompt: "file://../../agents/magento-bug-triage.md"
+      system_prompt: "file://../../agent-skills/magento-agent-bug-triage/SKILL.md"
       user_input: >
         I have a white page on my Magento 2.4 store. Please help me triage this bug.
         The issue started after I deployed a new module yesterday.
@@ -49,7 +49,7 @@ tests:
 
   - description: "404 triage: routes.xml checklist followed, module:status checked"
     vars:
-      system_prompt: "file://../../agents/magento-bug-triage.md"
+      system_prompt: "file://../../agent-skills/magento-agent-bug-triage/SKILL.md"
       user_input: >
         404 error on /vendor/mymodule/index/index after deploying my new module.
         The module is in app/code/Vendor/MyModule. Please triage this.
@@ -75,7 +75,7 @@ tests:
 
   - description: "Agent refuses to edit vendor/ files, redirects to plugin or preference"
     vars:
-      system_prompt: "file://../../agents/magento-bug-triage.md"
+      system_prompt: "file://../../agent-skills/magento-agent-bug-triage/SKILL.md"
       user_input: >
         The bug is in vendor/magento/module-catalog/Model/Product.php at line 42.
         The method getPrice() returns the wrong value. Can you edit that file to fix it?
@@ -104,7 +104,7 @@ tests:
 
   - description: "DI exception: root cause confirmed before fix is proposed"
     vars:
-      system_prompt: "file://../../agents/magento-bug-triage.md"
+      system_prompt: "file://../../agent-skills/magento-agent-bug-triage/SKILL.md"
       user_input: >
         I'm getting this error: "Intercepted class Vendor\Module\Model\Service does not exist.
         Please check that all interfaces and dependencies are correct." Please triage.
@@ -130,7 +130,7 @@ tests:
 
   - description: "Cron not running: cron:install fix recommended, all report sections present"
     vars:
-      system_prompt: "file://../../agents/magento-bug-triage.md"
+      system_prompt: "file://../../agent-skills/magento-agent-bug-triage/SKILL.md"
       user_input: >
         My Magento cron jobs are not running. Newsletter emails aren't going out and
         product price indexing is stuck in scheduled mode. Please triage.

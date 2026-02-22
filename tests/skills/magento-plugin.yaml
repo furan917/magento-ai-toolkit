@@ -19,7 +19,7 @@ defaultTest:
 tests:
   - description: "Before plugin returns array of args, not void"
     vars:
-      system_prompt: "file://../../skills/magento-plugin.md"
+      system_prompt: "file://../../skills/magento-plugin/SKILL.md"
       user_input: >
         Write a before plugin on Magento\Catalog\Model\Product for the setName method.
         It should trim whitespace from the name argument before it is set.
@@ -40,7 +40,7 @@ tests:
 
   - description: "After plugin modifies return via $result, never calls $proceed"
     vars:
-      system_prompt: "file://../../skills/magento-plugin.md"
+      system_prompt: "file://../../skills/magento-plugin/SKILL.md"
       user_input: >
         Write an after plugin on Magento\Catalog\Model\Product for the getName method
         that appends " - SALE" to the product name.
@@ -64,7 +64,7 @@ tests:
 
   - description: "Around plugin always calls $proceed() to preserve the call chain"
     vars:
-      system_prompt: "file://../../skills/magento-plugin.md"
+      system_prompt: "file://../../skills/magento-plugin/SKILL.md"
       user_input: >
         Write an around plugin on Magento\Catalog\Model\Product for the save method
         that logs a message before and after the save operation.
@@ -88,7 +88,7 @@ tests:
 
   - description: "di.xml uses sortOrder and area-specific file path; plugin class does not extend"
     vars:
-      system_prompt: "file://../../skills/magento-plugin.md"
+      system_prompt: "file://../../skills/magento-plugin/SKILL.md"
       user_input: >
         Generate the di.xml plugin declaration for a plugin that should only apply
         on the Magento frontend. The plugin targets Magento\Catalog\Model\Product.
@@ -111,7 +111,7 @@ tests:
 
   - description: "Skill recommends observer for event-reaction use case, not a plugin"
     vars:
-      system_prompt: "file://../../skills/magento-plugin.md"
+      system_prompt: "file://../../skills/magento-plugin/SKILL.md"
       user_input: >
         I want to run some custom code whenever a Magento product is saved.
         Should I use a plugin or an observer for this?

@@ -19,7 +19,7 @@ defaultTest:
 tests:
   - description: "Vague input triggers clarifying questions, not file generation"
     vars:
-      system_prompt: "file://../../agents/magento-module-generator.md"
+      system_prompt: "file://../../agent-skills/magento-agent-module-generator/SKILL.md"
       user_input: |
         Create a Magento module for managing subscriptions.
     assert:
@@ -43,7 +43,7 @@ tests:
 
   - description: "Complete spec generates all Phase 1 and Phase 2 files"
     vars:
-      system_prompt: "file://../../agents/magento-module-generator.md"
+      system_prompt: "file://../../agent-skills/magento-agent-module-generator/SKILL.md"
       user_input: |
         Generate a Magento module with these specs:
         - Vendor: Acme, Module: Subscription
@@ -79,7 +79,7 @@ tests:
 
   - description: "Only confirmed features are generated"
     vars:
-      system_prompt: "file://../../agents/magento-module-generator.md"
+      system_prompt: "file://../../agent-skills/magento-agent-module-generator/SKILL.md"
       user_input: |
         Generate a module: Vendor=Demo, Module=Logger.
         Features needed: ONLY a custom logger (Monolog handler). Nothing else.
@@ -105,7 +105,7 @@ tests:
 
   - description: "Generated PHP code uses constructor injection, not anti-patterns"
     vars:
-      system_prompt: "file://../../agents/magento-module-generator.md"
+      system_prompt: "file://../../agent-skills/magento-agent-module-generator/SKILL.md"
       user_input: |
         Generate a complete Magento module: Vendor=Test, Module=Example.
         Entity: Example with fields: id (int PK), name (varchar 255), status (smallint default 1), created_at (timestamp).
@@ -129,7 +129,7 @@ tests:
 
   - description: "Report completeness: file manifest and install commands present"
     vars:
-      system_prompt: "file://../../agents/magento-module-generator.md"
+      system_prompt: "file://../../agent-skills/magento-agent-module-generator/SKILL.md"
       user_input: |
         Generate a minimal module: Vendor=Foo, Module=Bar. No features beyond the
         bare minimum to register and enable the module.

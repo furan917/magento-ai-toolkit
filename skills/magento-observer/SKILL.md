@@ -1,3 +1,11 @@
+---
+name: magento-observer
+description: "Create Magento 2 event observers to react to system events without modifying core code. Use when responding to events like catalog_product_save_after."
+license: MIT
+metadata:
+  author: mage-os
+---
+
 # Skill: magento-observer
 
 **Purpose**: Create Magento 2 event observers to react to system events without modifying core code.

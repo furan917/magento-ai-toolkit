@@ -19,7 +19,7 @@ defaultTest:
 tests:
   - description: "Redis env.php structure uses correct DB separation"
     vars:
-      system_prompt: "file://../../skills/magento-infra.md"
+      system_prompt: "file://../../skills/magento-infra/SKILL.md"
       user_input: |
         Configure Magento to use Redis for cache, full-page cache, and sessions.
         Show me the env.php configuration.
@@ -37,7 +37,7 @@ tests:
 
   - description: "Database connections separated: default, indexer, checkout"
     vars:
-      system_prompt: "file://../../skills/magento-infra.md"
+      system_prompt: "file://../../skills/magento-infra/SKILL.md"
       user_input: |
         We're experiencing database lock contention on our busy store. How should we
         structure Magento's database connections?
@@ -52,7 +52,7 @@ tests:
 
   - description: "RabbitMQ requires all four config files"
     vars:
-      system_prompt: "file://../../skills/magento-infra.md"
+      system_prompt: "file://../../skills/magento-infra/SKILL.md"
       user_input: |
         Set up asynchronous message processing in Magento using RabbitMQ for a custom
         import queue.
@@ -75,7 +75,7 @@ tests:
 
   - description: "Redis diagnostics use redis-cli, not direct PHP ObjectManager"
     vars:
-      system_prompt: "file://../../skills/magento-infra.md"
+      system_prompt: "file://../../skills/magento-infra/SKILL.md"
       user_input: |
         Our Magento site is slow and I suspect Redis cache is not working. How do I
         diagnose the Redis cache layer?
@@ -92,7 +92,7 @@ tests:
 
   - description: "OpenSearch/Elasticsearch index operations through Magento CLI"
     vars:
-      system_prompt: "file://../../skills/magento-infra.md"
+      system_prompt: "file://../../skills/magento-infra/SKILL.md"
       user_input: |
         Products are missing from search results after a bulk import. How do I fix the
         search index?

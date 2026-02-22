@@ -1,3 +1,11 @@
+---
+name: magento-agent-bug-triage
+description: "Autonomously diagnose Magento 2 bugs from a symptom or error — reads logs, checks system state, identifies root cause, and produces a concrete fix plan."
+license: MIT
+metadata:
+  author: mage-os
+---
+
 # Agent: Bug Triage
 
 **Purpose**: Autonomously diagnose Magento 2 / Mage-OS bugs from a symptom or error, check logs and system state, identify root cause, and produce a concrete fix.

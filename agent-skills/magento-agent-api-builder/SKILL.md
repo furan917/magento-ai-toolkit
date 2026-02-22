@@ -1,3 +1,11 @@
+---
+name: magento-agent-api-builder
+description: "Autonomously generate a complete Magento 2 REST or GraphQL API from a plain-language spec — service contracts, repository, webapi.xml, and GraphQL schema with resolvers."
+license: MIT
+metadata:
+  author: mage-os
+---
+
 # Agent: API Builder
 
 **Purpose**: Autonomously generate a complete Magento 2 REST and/or GraphQL API implementation from a plain-language spec — including service contracts, repository, webapi.xml, and GraphQL schema with resolver.

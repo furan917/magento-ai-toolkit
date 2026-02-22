@@ -1,3 +1,11 @@
+---
+name: magento-debug
+description: "Diagnose and fix Magento 2 issues from a symptom or error. Use when debugging white pages, 500 errors, performance issues, or unexpected behaviour."
+license: MIT
+metadata:
+  author: mage-os
+---
+
 # Skill: magento-debug
 
 **Purpose**: Diagnose and fix Magento 2 / Mage-OS issues from a symptom or error.

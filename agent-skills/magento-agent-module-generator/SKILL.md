@@ -1,3 +1,11 @@
+---
+name: magento-agent-module-generator
+description: "Autonomously generate a complete, production-ready Magento 2 module from a plain-language spec — all files, directory structure, service contracts, and database schema."
+license: MIT
+metadata:
+  author: mage-os
+---
+
 # Agent: Module Generator
 
 **Purpose**: Autonomously generate a complete, production-ready Magento 2 module skeleton from a plain-language spec — including all required files, directory structure, service contracts, database schema, and optional extras (CLI, observers, plugins, tests).

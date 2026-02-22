@@ -1,3 +1,11 @@
+---
+name: magento-agent-code-review
+description: "Autonomously review Magento 2 module code against coding standards, architectural rules, and security requirements. Produces a severity-rated findings report."
+license: MIT
+metadata:
+  author: mage-os
+---
+
 # Agent: Code Review
 
 **Purpose**: Autonomously review Magento 2 module code against coding standards, architectural rules, security requirements, and common pitfalls. Produces a structured report with severity-rated findings.

@@ -21,7 +21,7 @@ defaultTest:
 tests:
   - description: "Observer class implements ObserverInterface with correct execute signature"
     vars:
-      system_prompt: "file://../../skills/magento-observer.md"
+      system_prompt: "file://../../skills/magento-observer/SKILL.md"
       user_input: |
         Generate an observer that listens to the `catalog_product_save_after` event
         and logs the product SKU.
@@ -44,7 +44,7 @@ tests:
 
   - description: "Null-check on getData() before use"
     vars:
-      system_prompt: "file://../../skills/magento-observer.md"
+      system_prompt: "file://../../skills/magento-observer/SKILL.md"
       user_input: |
         Create an observer for `sales_order_place_after` that reads a custom order attribute
         and sends it to a third-party API.
@@ -61,7 +61,7 @@ tests:
 
   - description: "events.xml and observer class are generated together"
     vars:
-      system_prompt: "file://../../skills/magento-observer.md"
+      system_prompt: "file://../../skills/magento-observer/SKILL.md"
       user_input: |
         I need to invalidate a cache tag whenever a product is saved.
         Show me everything I need: the observer class and its registration.
@@ -81,7 +81,7 @@ tests:
 
   - description: "Heavy logic belongs in a service, not in the observer directly"
     vars:
-      system_prompt: "file://../../skills/magento-observer.md"
+      system_prompt: "file://../../skills/magento-observer/SKILL.md"
       user_input: |
         On customer_register_success event I need to: validate the customer's email domain,
         create a loyalty account via an external API, send a welcome email, and write an
@@ -99,7 +99,7 @@ tests:
 
   - description: "Custom event dispatch includes correct parameter passing"
     vars:
-      system_prompt: "file://../../skills/magento-observer.md"
+      system_prompt: "file://../../skills/magento-observer/SKILL.md"
       user_input: |
         How do I dispatch a custom event called `vendor_module_import_complete` and pass
         the count of imported records to observers?

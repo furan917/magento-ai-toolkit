@@ -1,3 +1,11 @@
+---
+name: magento-plugin
+description: "Create Magento 2 plugins (interceptors) to modify core or third-party method behaviour without editing vendor code. Use when intercepting methods or adding before/after/around logic."
+license: MIT
+metadata:
+  author: mage-os
+---
+
 # Skill: magento-plugin
 
 **Purpose**: Create Magento 2 plugins (interceptors) to modify core or third-party method behaviour without editing vendor code.

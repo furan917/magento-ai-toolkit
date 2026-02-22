@@ -19,7 +19,7 @@ defaultTest:
 tests:
   - description: "Audit report covers all 8 layers with a score"
     vars:
-      system_prompt: "file://../../agents/magento-performance-auditor.md"
+      system_prompt: "file://../../agent-skills/magento-agent-performance-auditor/SKILL.md"
       user_input: |
         Our Magento store's TTFB is over 3 seconds on the homepage. Please audit
         the performance across all relevant layers.
@@ -38,7 +38,7 @@ tests:
 
   - description: "Agent does not auto-apply fixes — recommendations only"
     vars:
-      system_prompt: "file://../../agents/magento-performance-auditor.md"
+      system_prompt: "file://../../agent-skills/magento-agent-performance-auditor/SKILL.md"
       user_input: |
         The audit found that Redis cache has a hit rate of only 40%. Fix it for me.
     assert:
@@ -54,7 +54,7 @@ tests:
 
   - description: "Report contains Critical, High, Medium severity sections"
     vars:
-      system_prompt: "file://../../agents/magento-performance-auditor.md"
+      system_prompt: "file://../../agent-skills/magento-agent-performance-auditor/SKILL.md"
       user_input: |
         Do a full performance audit. Here's our setup: no Varnish, Redis for cache only
         (not sessions), OPcache enabled, MySQL 8, catalogsearch using realtime indexer
@@ -74,7 +74,7 @@ tests:
 
   - description: "Skill detection: magento-infra vocabulary used for Redis/DB findings"
     vars:
-      system_prompt: "file://../../agents/magento-performance-auditor.md"
+      system_prompt: "file://../../agent-skills/magento-agent-performance-auditor/SKILL.md"
       user_input: |
         Audit our Redis configuration. We have DB 0 for cache and DB 0 for sessions.
     assert:
@@ -92,7 +92,7 @@ tests:
 
   - description: "Realtime indexer on large catalog flagged as HIGH"
     vars:
-      system_prompt: "file://../../agents/magento-performance-auditor.md"
+      system_prompt: "file://../../agent-skills/magento-agent-performance-auditor/SKILL.md"
       user_input: |
         We have 50,000 products and the indexer mode is set to realtime for all indexers
         including catalogsearch_fulltext. Is this a problem?

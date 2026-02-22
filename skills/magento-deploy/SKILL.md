@@ -1,3 +1,11 @@
+---
+name: magento-deploy
+description: "Guide safe Magento 2 deployments with correct command order and minimal downtime. Use when planning or executing a Magento 2 deployment."
+license: MIT
+metadata:
+  author: mage-os
+---
+
 # Skill: magento-deploy
 
 **Purpose**: Guide safe Magento 2 / Mage-OS deployments with correct command order and minimal downtime.

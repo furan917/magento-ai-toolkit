@@ -1,3 +1,11 @@
+---
+name: magento-api
+description: "Create Magento 2 REST and GraphQL API endpoints following service contract patterns. Use when building APIs, webapi.xml routes, or GraphQL resolvers."
+license: MIT
+metadata:
+  author: mage-os
+---
+
 # Skill: magento-api
 
 **Purpose**: Create Magento 2 REST and GraphQL API endpoints following service contract patterns.

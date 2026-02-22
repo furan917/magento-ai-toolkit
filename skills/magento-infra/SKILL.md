@@ -1,3 +1,11 @@
+---
+name: magento-infra
+description: "Configure and troubleshoot Magento 2 infrastructure: Redis, RabbitMQ, and OpenSearch/Elasticsearch. Use when setting up or debugging cache, queues, or search."
+license: MIT
+metadata:
+  author: mage-os
+---
+
 # Skill: magento-infra
 
 **Purpose**: Configure and troubleshoot Magento 2 infrastructure services — Redis, RabbitMQ, and OpenSearch/Elasticsearch.

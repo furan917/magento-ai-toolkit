@@ -19,7 +19,7 @@ defaultTest:
 tests:
   - description: "Full deploy sequence includes all mandatory steps in order"
     vars:
-      system_prompt: "file://../../skills/magento-deploy.md"
+      system_prompt: "file://../../skills/magento-deploy/SKILL.md"
       user_input: |
         Walk me through the complete deployment process for a Magento 2 store on a
         dedicated server. I'm deploying a new module.
@@ -43,7 +43,7 @@ tests:
 
   - description: "--keep-generated is non-negotiable on production"
     vars:
-      system_prompt: "file://../../skills/magento-deploy.md"
+      system_prompt: "file://../../skills/magento-deploy/SKILL.md"
       user_input: |
         On our production server we run `bin/magento setup:upgrade` as part of deployment.
         Should we delete the generated/ directory before or after this command?
@@ -60,7 +60,7 @@ tests:
 
   - description: "Build phase vs deploy phase distinction is clear"
     vars:
-      system_prompt: "file://../../skills/magento-deploy.md"
+      system_prompt: "file://../../skills/magento-deploy/SKILL.md"
       user_input: |
         What's the difference between the build phase and deploy phase in Magento deployment?
         Which commands go in each?
@@ -76,7 +76,7 @@ tests:
 
   - description: "OPcache must be flushed after deploy"
     vars:
-      system_prompt: "file://../../skills/magento-deploy.md"
+      system_prompt: "file://../../skills/magento-deploy/SKILL.md"
       user_input: |
         We deployed a new PHP file to production but the old code is still running.
         What do we need to do after a Magento deployment?
@@ -90,7 +90,7 @@ tests:
 
   - description: "Zero-downtime deployment pattern is described correctly"
     vars:
-      system_prompt: "file://../../skills/magento-deploy.md"
+      system_prompt: "file://../../skills/magento-deploy/SKILL.md"
       user_input: |
         How can I deploy Magento with zero downtime? We can't afford maintenance mode.
     assert:

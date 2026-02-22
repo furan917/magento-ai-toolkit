@@ -19,7 +19,7 @@ defaultTest:
 tests:
   - description: "Unit test has correct structure: TestCase, setUp, mock, assert"
     vars:
-      system_prompt: "file://../../skills/magento-test.md"
+      system_prompt: "file://../../skills/magento-test/SKILL.md"
       user_input: |
         Write a unit test for a service class `ProductPriceCalculator` that has a method
         `calculate(Product $product, float $qty): float`. It depends on a
@@ -44,7 +44,7 @@ tests:
 
   - description: "getMockBuilder used with disableOriginalConstructor for concrete classes"
     vars:
-      system_prompt: "file://../../skills/magento-test.md"
+      system_prompt: "file://../../skills/magento-test/SKILL.md"
       user_input: |
         I need to mock `Magento\Catalog\Model\Product` in my unit test, but calling
         createMock() triggers the constructor which needs database access. How do I fix this?
@@ -64,7 +64,7 @@ tests:
 
   - description: "Integration test uses @magentoDataFixture and @magentoDbIsolation"
     vars:
-      system_prompt: "file://../../skills/magento-test.md"
+      system_prompt: "file://../../skills/magento-test/SKILL.md"
       user_input: |
         Write an integration test that creates a product, saves it, then retrieves it
         by SKU and asserts the price is correct.
@@ -85,7 +85,7 @@ tests:
 
   - description: "Private methods are not tested directly"
     vars:
-      system_prompt: "file://../../skills/magento-test.md"
+      system_prompt: "file://../../skills/magento-test/SKILL.md"
       user_input: |
         How do I test a private method `calculateDiscount()` in my service class?
     assert:
@@ -99,7 +99,7 @@ tests:
 
   - description: "Correct phpunit command paths for unit vs integration tests"
     vars:
-      system_prompt: "file://../../skills/magento-test.md"
+      system_prompt: "file://../../skills/magento-test/SKILL.md"
       user_input: |
         How do I run my unit tests and integration tests for Magento?
     assert:

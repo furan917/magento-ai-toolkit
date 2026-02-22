@@ -19,7 +19,7 @@ defaultTest:
 tests:
   - description: "ObjectManager direct use → MAG-001 CRITICAL detected, fix is constructor injection"
     vars:
-      system_prompt: "file://../../agents/magento-code-review.md"
+      system_prompt: "file://../../agent-skills/magento-agent-code-review/SKILL.md"
       user_input: |
         Please review this Magento service class:
 
@@ -58,7 +58,7 @@ tests:
 
   - description: "Missing declare(strict_types=1) → MAG-010 HIGH detected"
     vars:
-      system_prompt: "file://../../agents/magento-code-review.md"
+      system_prompt: "file://../../agent-skills/magento-agent-code-review/SKILL.md"
       user_input: |
         Please review this Magento plugin class:
 
@@ -93,7 +93,7 @@ tests:
 
   - description: "Around plugin where after would suffice → MAG-005 HIGH, refactor to after"
     vars:
-      system_prompt: "file://../../agents/magento-code-review.md"
+      system_prompt: "file://../../agent-skills/magento-agent-code-review/SKILL.md"
       user_input: |
         Please review this Magento around plugin:
 
@@ -133,7 +133,7 @@ tests:
 
   - description: "Clean code with no violations → Passed Checks section, no fabricated findings"
     vars:
-      system_prompt: "file://../../agents/magento-code-review.md"
+      system_prompt: "file://../../agent-skills/magento-agent-code-review/SKILL.md"
       user_input: |
         Please review this Magento observer class:
 
@@ -175,7 +175,7 @@ tests:
 
   - description: "Four violations at once → all 4 MAG codes present and Summary table counts consistent"
     vars:
-      system_prompt: "file://../../agents/magento-code-review.md"
+      system_prompt: "file://../../agent-skills/magento-agent-code-review/SKILL.md"
       user_input: |
         Please review this Magento module code:
 

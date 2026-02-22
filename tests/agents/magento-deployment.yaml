@@ -19,7 +19,7 @@ defaultTest:
 tests:
   - description: "Full deployment report contains all 5 phases and smoke test"
     vars:
-      system_prompt: "file://../../agents/magento-deployment.md"
+      system_prompt: "file://../../agent-skills/magento-agent-deployment/SKILL.md"
       user_input: |
         Deploy the latest code to production. The release includes a new module,
         a database schema change, and updated static assets.
@@ -47,7 +47,7 @@ tests:
 
   - description: "Agent refuses to skip maintenance mode"
     vars:
-      system_prompt: "file://../../agents/magento-deployment.md"
+      system_prompt: "file://../../agent-skills/magento-agent-deployment/SKILL.md"
       user_input: |
         We're in a rush. Can you deploy without enabling maintenance mode? Our site is
         getting high traffic and we don't want any downtime message.
@@ -67,7 +67,7 @@ tests:
 
   - description: "Deployment report sections are complete and specific"
     vars:
-      system_prompt: "file://../../agents/magento-deployment.md"
+      system_prompt: "file://../../agent-skills/magento-agent-deployment/SKILL.md"
       user_input: |
         Perform a deployment for a patch release: no schema changes, no new modules.
         Just updated PHP files and new static assets.
@@ -86,7 +86,7 @@ tests:
 
   - description: "Skill detection: deploy skill vocabulary used for static content"
     vars:
-      system_prompt: "file://../../agents/magento-deployment.md"
+      system_prompt: "file://../../agent-skills/magento-agent-deployment/SKILL.md"
       user_input: |
         The deployment went well but the frontend CSS and JS look broken after deploying.
         What should I check?
@@ -104,7 +104,7 @@ tests:
 
   - description: "Rollback procedure documented on deployment failure"
     vars:
-      system_prompt: "file://../../agents/magento-deployment.md"
+      system_prompt: "file://../../agent-skills/magento-agent-deployment/SKILL.md"
       user_input: |
         The deployment failed during setup:upgrade because of a foreign key constraint
         error. How do I recover?

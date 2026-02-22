@@ -1,3 +1,11 @@
+---
+name: magento-hyva
+description: "Build Hyva theme templates, Alpine.js components, Tailwind CSS styles, and View Models for Magento 2. Use when developing frontend for Hyva-based Magento stores."
+license: MIT
+metadata:
+  author: mage-os
+---
+
 # Skill: magento-hyva
 
 **Purpose**: Build Hyvä theme templates, Alpine.js components, Tailwind CSS styles, and View Models for Magento 2.
