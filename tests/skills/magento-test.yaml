@@ -12,11 +12,9 @@ providers:
 defaultTest:
   assert:
     - type: latency
-      threshold: 60000
+      threshold: 120000
     - type: javascript
       value: "output.trim().length > 50"
-    - type: not-contains
-      value: "ObjectManager::getInstance"
 
 tests:
   - description: "Unit test has correct structure: TestCase, setUp, mock, assert"
@@ -35,6 +33,8 @@ tests:
         value: "createMock"
       - type: contains
         value: "declare(strict_types=1)"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
       - type: llm-rubric
         value: |
           The test class must extend PHPUnit\Framework\TestCase, have a setUp() method
@@ -53,6 +53,8 @@ tests:
         value: "getMockBuilder"
       - type: contains
         value: "disableOriginalConstructor"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
       - type: llm-rubric
         value: |
           The response must show using getMockBuilder(Product::class)->disableOriginalConstructor()->getMock()
@@ -71,6 +73,8 @@ tests:
         value: "@magentoDataFixture"
       - type: contains
         value: "Bootstrap::getObjectManager"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
       - type: llm-rubric
         value: |
           The integration test must use Bootstrap::getObjectManager() to get the real

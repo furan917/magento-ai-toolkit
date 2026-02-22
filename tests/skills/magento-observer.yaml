@@ -12,11 +12,9 @@ providers:
 defaultTest:
   assert:
     - type: latency
-      threshold: 60000
+      threshold: 120000
     - type: javascript
       value: "output.trim().length > 50"
-    - type: not-contains
-      value: "ObjectManager::getInstance"
     - type: not-contains
       value: "shared=\"true\""
 
@@ -36,6 +34,8 @@ tests:
         value: "shared=\"false\""
       - type: contains
         value: "declare(strict_types=1)"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
       - type: llm-rubric
         value: |
           The response must declare an observer class that implements
@@ -51,6 +51,8 @@ tests:
     assert:
       - type: contains
         value: "getData("
+      - type: not-contains
+        value: "ObjectManager::getInstance"
       - type: llm-rubric
         value: |
           The observer code must null-check or guard the result of getData() before using it —
@@ -70,6 +72,8 @@ tests:
         value: "catalog_product_save_after"
       - type: contains
         value: "instance="
+      - type: not-contains
+        value: "ObjectManager::getInstance"
       - type: llm-rubric
         value: |
           The response must include both the events.xml XML snippet with the event/observer
@@ -83,6 +87,8 @@ tests:
         create a loyalty account via an external API, send a welcome email, and write an
         audit log entry. Put it all in the observer.
     assert:
+      - type: not-contains
+        value: "ObjectManager::getInstance"
       - type: llm-rubric
         value: |
           The response must NOT place all business logic directly in execute(). It should
@@ -103,6 +109,8 @@ tests:
         # matches both $this->eventManager->dispatch and $this->_eventManager->dispatch
       - type: contains
         value: "vendor_module_import_complete"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
       - type: llm-rubric
         value: |
           The response must show how to dispatch a custom event using

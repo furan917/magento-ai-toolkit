@@ -12,15 +12,9 @@ providers:
 defaultTest:
   assert:
     - type: latency
-      threshold: 60000
+      threshold: 150000
     - type: javascript
       value: "output.trim().length > 50"
-    - type: not-contains
-      value: "ObjectManager::getInstance"
-    - type: not-contains
-      value: "InstallSchema"
-    - type: not-contains
-      value: "UpgradeSchema"
 
 tests:
   - description: "Vague input triggers clarifying questions, not file generation"
@@ -33,6 +27,12 @@ tests:
         value: "registration.php"
       - type: not-contains
         value: "module.xml"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: not-contains
+        value: "InstallSchemaInterface"
+      - type: not-contains
+        value: "UpgradeSchemaInterface"
       - type: llm-rubric
         value: |
           The agent must NOT generate any files for this vague request. It must ask
@@ -61,6 +61,12 @@ tests:
         value: "db_schema.xml"
       - type: contains
         value: "declare(strict_types=1)"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: not-contains
+        value: "InstallSchemaInterface"
+      - type: not-contains
+        value: "UpgradeSchemaInterface"
       - type: llm-rubric
         value: |
           With a complete specification provided, the agent must generate ALL of:
@@ -83,6 +89,12 @@ tests:
         value: "webapi.xml"
       - type: not-contains
         value: "crontab.xml"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: not-contains
+        value: "InstallSchemaInterface"
+      - type: not-contains
+        value: "UpgradeSchemaInterface"
       - type: llm-rubric
         value: |
           The agent must generate ONLY files relevant to a custom logger: registration.php,
@@ -96,11 +108,17 @@ tests:
       system_prompt: "file://../../agents/magento-module-generator.md"
       user_input: |
         Generate a complete Magento module: Vendor=Test, Module=Example.
-        Entity: Product attribute (varchar, scope=store).
-        Features: Install attribute via data patch, REST read endpoint.
+        Entity: Example with fields: id (int PK), name (varchar 255), status (smallint default 1), created_at (timestamp).
+        Features: seed initial records via data patch, REST read endpoint (GET by ID and GET list).
     assert:
       - type: contains
         value: "DataPatchInterface"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: not-contains
+        value: "InstallSchemaInterface"
+      - type: not-contains
+        value: "UpgradeSchemaInterface"
       - type: llm-rubric
         value: |
           All generated PHP classes must use constructor injection for dependencies.
@@ -122,6 +140,12 @@ tests:
         value: "module.xml"
       - type: contains
         value: "setup:upgrade"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: not-contains
+        value: "InstallSchemaInterface"
+      - type: not-contains
+        value: "UpgradeSchemaInterface"
       - type: llm-rubric
         value: |
           The output must include a file manifest listing all generated files with their

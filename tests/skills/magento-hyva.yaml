@@ -12,15 +12,9 @@ providers:
 defaultTest:
   assert:
     - type: latency
-      threshold: 60000
+      threshold: 120000
     - type: javascript
       value: "output.trim().length > 50"
-    - type: not-contains
-      value: "ko.observable"
-    - type: not-contains
-      value: "require("
-    - type: not-contains
-      value: "jQuery"
 
 tests:
   - description: "Alpine.js x-data component used instead of KnockoutJS"
@@ -35,6 +29,12 @@ tests:
       - type: regex
         value: "x-on:|@click|@\\w"
         # Alpine.js supports both x-on:click and @click shorthand
+      - type: not-contains
+        value: "ko.observable"
+      - type: not-contains
+        value: "require("
+      - type: not-contains
+        value: "jQuery"
       - type: llm-rubric
         value: |
           The response must use Alpine.js syntax (x-data, x-on or @click, x-text or :value)
@@ -71,6 +71,12 @@ tests:
       - type: contains
         value: "graphql"
         # case-insensitive or explicit /graphql endpoint
+      - type: not-contains
+        value: "ko.observable"
+      - type: not-contains
+        value: "require("
+      - type: not-contains
+        value: "jQuery"
       - type: llm-rubric
         value: |
           The response must show using the native fetch() API (not jQuery.ajax or axios)

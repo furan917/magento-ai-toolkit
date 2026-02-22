@@ -308,6 +308,8 @@ document.addEventListener('alpine:init', () => {
 
 ### GraphQL Data Fetching
 
+**Public query (no auth):**
+
 ```html
 <div x-data="initProductList()" x-init="fetchProducts()">
     <div class="grid grid-cols-4 gap-6">
@@ -346,6 +348,49 @@ function initProductList() {
             });
             const data = await res.json();
             this.products = data.data.products.items;
+        }
+    }
+}
+</script>
+```
+
+**Customer-authenticated query (wishlist, orders, account):**
+
+For customer-specific data, pass the customer token via `Authorization: Bearer` header.
+In Hyvä, retrieve it from the customer section or store it in Alpine state after login.
+
+```html
+<div x-data="initWishlist()" x-init="fetchWishlist()">
+    <template x-for="item in items" :key="item.id">
+        <div x-text="item.product.name"></div>
+    </template>
+</div>
+
+<script>
+function initWishlist() {
+    return {
+        items: [],
+        customerToken: window.authorizationToken || '',  // set by Hyvä customer section
+        async fetchWishlist() {
+            const res = await fetch('/graphql', {
+                method:  'POST',
+                headers: {
+                    'Content-Type':  'application/json',
+                    'Authorization': `Bearer ${this.customerToken}`
+                },
+                body: JSON.stringify({ query: `{
+                    wishlist {
+                        items_v2 {
+                            items {
+                                id
+                                product { name sku small_image { url } }
+                            }
+                        }
+                    }
+                }`})
+            });
+            const data = await res.json();
+            this.items = data.data?.wishlist?.items_v2?.items || [];
         }
     }
 }

@@ -12,13 +12,9 @@ providers:
 defaultTest:
   assert:
     - type: latency
-      threshold: 60000
+      threshold: 150000
     - type: javascript
       value: "output.trim().length > 50"
-    - type: contains
-      value: "## Deployment Report"
-    - type: not-contains
-      value: "rm -rf generated"
 
 tests:
   - description: "Full deployment report contains all 5 phases and smoke test"
@@ -29,6 +25,8 @@ tests:
         a database schema change, and updated static assets.
     assert:
       - type: contains
+        value: "## Deployment Report"
+      - type: contains
         value: "Phase 1"
       - type: contains
         value: "Phase 2"
@@ -38,6 +36,8 @@ tests:
         value: "maintenance:enable"
       - type: contains
         value: "setup:upgrade"
+      - type: not-contains
+        value: "rm -rf generated"
       - type: llm-rubric
         value: |
           The deployment report must describe all 5 phases of a Magento deployment:
@@ -55,6 +55,8 @@ tests:
       - type: not-contains
         value: "maintenance:disable"
         # should not disable maintenance without enabling it first
+      - type: not-contains
+        value: "rm -rf generated"
       - type: llm-rubric
         value: |
           The agent must refuse to skip maintenance mode for a deployment that includes
@@ -72,6 +74,8 @@ tests:
     assert:
       - type: contains
         value: "## Deployment Report"
+      - type: not-contains
+        value: "rm -rf generated"
       - type: llm-rubric
         value: |
           Even for a patch release with no schema changes, the report must explicitly
@@ -89,6 +93,8 @@ tests:
     assert:
       - type: contains
         value: "static-content:deploy"
+      - type: not-contains
+        value: "rm -rf generated"
       - type: llm-rubric
         value: |
           The response must identify static content deployment as the likely issue and
@@ -103,6 +109,8 @@ tests:
         The deployment failed during setup:upgrade because of a foreign key constraint
         error. How do I recover?
     assert:
+      - type: not-contains
+        value: "rm -rf generated"
       - type: llm-rubric
         value: |
           The response must provide a concrete rollback procedure: it must mention

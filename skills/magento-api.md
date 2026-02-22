@@ -154,7 +154,17 @@ interface EntityRepositoryInterface
 }
 ```
 
-> PHPDoc `@param`, `@return`, and `@throws` on `Api/` interfaces are **mandatory** — Magento's REST serialiser uses these annotations to convert PHP types to and from JSON. Without them, the API will silently fail or return the wrong types. Always use fully qualified class names in PHPDoc (not short names).
+> **PHPDoc is mandatory on `Api/` interfaces — not optional.**
+> Magento's REST framework uses reflection on `@param`, `@return`, and `@throws` annotations to serialize/deserialize PHP types to JSON. PHP type hints alone are not enough.
+>
+> | Missing annotation | Effect |
+> |-------------------|--------|
+> | `@return` missing | Response body is empty `{}` or wrong type |
+> | `@param` missing | Request body deserialization fails silently |
+> | Short class name (`EntityInterface`) | Serialiser cannot resolve the type |
+>
+> **Always use fully qualified class names** in PHPDoc: `\Vendor\Module\Api\Data\EntityInterface`, not `EntityInterface`.
+> For arrays: use `\Vendor\Module\Api\Data\EntityInterface[]` (the `[]` suffix is required for list serialization).
 
 ---
 
@@ -366,7 +376,8 @@ mutation {
 ## Instructions for LLM
 
 - REST endpoints must point to `Api/` interfaces — never Model classes directly
-- PHPDoc `@param`, `@return`, and `@throws` in `Api/` interfaces are mandatory — the REST serialiser uses these to convert PHP types to/from JSON; missing or wrong annotations cause silent failures or incorrect response types
+- PHPDoc `@param`, `@return`, and `@throws` in `Api/` interfaces are **mandatory** — the REST serialiser uses these annotations (not PHP type hints) to convert PHP types to/from JSON; missing annotations cause silent serialization failures; short class names cause type resolution failures — always use fully qualified class names
+- Whenever you generate an `Api/` interface, always include an explicit note explaining why PHPDoc is mandatory: "Magento's REST framework reads `@param` and `@return` annotations to serialize/deserialize PHP types to JSON — PHP type hints alone are not sufficient. Missing or incorrect annotations cause silent API failures."
 - GraphQL resolver always returns an array, never an object
 - Pass `'model' => $entity` in resolver return array so child resolvers can access it
 - Anonymous REST endpoints (`<resource ref="anonymous"/>`) require no auth — use carefully

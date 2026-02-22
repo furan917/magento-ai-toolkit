@@ -165,9 +165,9 @@ find {module_path}/Observer -name "*.php" | while read f; do cat "$f"; done
 **Check for**:
 - [ ] Implements `ObserverInterface`
 - [ ] Only method is `execute(Observer $observer): void`
-- [ ] Null-checks data before using: `$event->getData('order')` can be null
+- [ ] If event data is accessed via `getData('key')` (string key lookup), verify a null check exists before using the result — this is only a finding if the code calls a method on an unchecked null result. Standard typed getters like `getProduct()` on `catalog_product_save_after` are **not** a null-safety violation.
 - [ ] No heavy logic — delegates to service class
-- [ ] `shared="false"` in `events.xml`
+- [ ] `shared="false"` in `events.xml` — **only check this if `events.xml` was submitted**. Do not raise MAG-018 if only PHP files were provided.
 
 #### Templates (PHTML)
 
@@ -309,19 +309,32 @@ Use these standard finding descriptions:
 
 ---
 
+## Instructions for LLM
+
+- **Your response MUST start with `## Code Review Report`** — use this exact heading every time.
+- **Never fabricate violations.** If a violation is not present in the submitted code, do not report it. To raise a finding, you must be able to point to a specific line or construct in the code that was actually submitted. Do not invent issues to appear thorough. Do not add speculative findings like "this might be a problem if…" or "verify that X is correct" — if you cannot confirm a violation from the submitted code, do not raise it.
+- **Only use finding codes from the Finding Catalogue above.** Do not invent codes like `MAG-007-variant`, `MAG-007a`, or any other unlisted code. If a finding doesn't fit a catalogue code, use the closest existing code or do not report it.
+- **Standard Magento observer event access is not a null-safety violation.** Accessing event payload via a named getter (e.g. `$observer->getEvent()->getProduct()`) on an observer registered to a specific event (e.g. `catalog_product_save_after`) is the standard Magento pattern. Do NOT flag this as null-unsafe. Only flag missing null checks when code calls `getData('key')` on a `DataObject` and immediately uses the result without checking for null, AND there is no specific event registration guaranteeing the key exists.
+- **MAG-018 (`shared="false"` missing) requires `events.xml` to be submitted.** The `shared` attribute lives in `events.xml`, not in the PHP observer class. If only PHP files were submitted and no `events.xml` was included, do not raise MAG-018 — you cannot know what the XML configuration says.
+- **The Summary table counts must match exactly** the number of finding entries below it. Count the findings you listed and update the table before responding.
+- **Passed Checks is mandatory** — always include this section even if empty. If a check has nothing to flag, list it there.
+
 ## Output Format
 
 Before responding, verify your draft against this checklist. If any item is missing or wrong, fix it before sending.
 
 **Self-check**:
-- [ ] `## Code Review Report` heading is present
+- [ ] `## Code Review Report` heading is the FIRST line of output
 - [ ] Module, Path, and Reviewed fields are filled in with real values — not placeholders
 - [ ] Summary table has all four severity rows with actual counts, not "X"
 - [ ] The count in the Summary table matches the number of findings listed in the Findings section exactly — recount if unsure
 - [ ] Every finding entry has: MAG code, severity emoji, finding name, File with line number, Code block showing the problem, Why explanation, and Fix with corrected code
+- [ ] No findings are invented — every MAG code raised must correspond to a specific construct in the submitted code. If you cannot quote the line, drop the finding.
+- [ ] No speculative findings — do not raise "verify that…" or "if X is not present…" findings. Only report confirmed violations.
+- [ ] Only catalogue codes used — no MAG-007-variant, no invented codes.
+- [ ] MAG-018 not raised if events.xml was not submitted.
 - [ ] Passed Checks section is present — list what was clean; if nothing passed, state that explicitly rather than omitting the section
 - [ ] Recommendations section is present with at least one prioritised action
-- [ ] No findings are invented — every MAG code raised must correspond to code that was actually in the input
 
 ```
 ## Code Review Report

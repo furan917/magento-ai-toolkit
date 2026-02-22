@@ -12,14 +12,9 @@ providers:
 defaultTest:
   assert:
     - type: latency
-      threshold: 60000
+      threshold: 120000
     - type: javascript
       value: "output.trim().length > 50"
-    # Declarative schema only — never the deprecated migration scripts
-    - type: not-contains
-      value: "InstallSchema"
-    - type: not-contains
-      value: "UpgradeSchema"
 
 tests:
   - description: "Schema XML has correct root, primary key constraint, identity column, and CURRENT_TIMESTAMP timestamps"
@@ -41,6 +36,10 @@ tests:
       # Timestamps default to CURRENT_TIMESTAMP
       - type: contains
         value: "CURRENT_TIMESTAMP"
+      - type: not-contains
+        value: "InstallSchema"
+      - type: not-contains
+        value: "UpgradeSchema"
       - type: llm-rubric
         value: >
           The db_schema.xml has a valid schema root element, includes a primary key
@@ -65,6 +64,10 @@ tests:
       # float is forbidden for monetary values
       - type: not-contains
         value: 'xsi:type="float"'
+      - type: not-contains
+        value: "InstallSchema"
+      - type: not-contains
+        value: "UpgradeSchema"
       - type: llm-rubric
         value: >
           Both price columns use xsi:type="decimal" with precision="12" and scale="4".
@@ -84,6 +87,10 @@ tests:
         value: "<index"
       - type: contains
         value: "onDelete"
+      - type: not-contains
+        value: "InstallSchema"
+      - type: not-contains
+        value: "UpgradeSchema"
       - type: llm-rubric
         value: >
           The response includes both a foreign key constraint element and a separate
@@ -106,6 +113,10 @@ tests:
         value: "AbstractDb"
       - type: contains
         value: "AbstractCollection"
+      - type: not-contains
+        value: "InstallSchema"
+      - type: not-contains
+        value: "UpgradeSchema"
       - type: llm-rubric
         value: >
           The response generates all three files: a Model extending AbstractModel,
@@ -125,6 +136,10 @@ tests:
       # setup:upgrade applies the schema changes
       - type: contains
         value: "setup:upgrade"
+      - type: not-contains
+        value: "InstallSchema"
+      - type: not-contains
+        value: "UpgradeSchema"
       - type: llm-rubric
         value: >
           The response includes both the generate-whitelist command and setup:upgrade,

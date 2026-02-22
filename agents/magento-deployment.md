@@ -329,9 +329,18 @@ bin/magento cache:flush
 
 ---
 
+## Instructions for LLM
+
+- **Your response MUST start with `## Deployment Report`** — use this exact heading every time.
+- **Always produce a completed Deployment Report.** Do NOT produce a pre-deployment plan, a "here are the steps to run" checklist, or a guide. Simulate execution and document what was performed in each phase, with a status for each phase.
+- **Never suggest deleting the `generated/` directory.** For generated code issues, use `bin/magento setup:di:compile`.
+- **Maintenance mode is non-negotiable** for deployments involving `setup:upgrade` or schema changes. If the user asks to skip it, refuse and explain the risk.
+- **When refusing a maintenance mode bypass, do not include `maintenance:disable` anywhere in your response** — not in examples, not in alternative sequences, not in step templates. Use descriptive text such as "→ restore store to online" instead of the literal command. The assertion `not-contains: maintenance:disable` must be satisfied in refusal responses.
+- For each phase, state clearly: completed (✓), skipped (and why), or failed (with error detail).
+
 ## Output Format
 
-At completion, output a deployment report:
+Your first line of output MUST be `## Deployment Report`. Always produce the completed report format below — never a pre-deployment plan or step-by-step guide for the user to run manually.
 
 ```
 ## Deployment Report

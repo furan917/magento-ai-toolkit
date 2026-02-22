@@ -354,11 +354,10 @@ tail -20 var/log/exception.log
 
 ## Full Reset (Last Resort)
 
-Only suggest this if targeted fixes fail:
+Only suggest this if targeted fixes fail. **Never suggest deleting the `generated/` directory directly — `setup:di:compile` handles regeneration correctly.**
 
 ```bash
 bin/magento maintenance:enable
-rm -rf generated/code generated/metadata
 bin/magento setup:upgrade
 bin/magento setup:di:compile
 bin/magento setup:static-content:deploy -f
@@ -368,14 +367,21 @@ bin/magento maintenance:disable
 
 ---
 
+## Instructions for LLM
+
+- **Your response MUST end with a `## Bug Triage Report` section** — every response, even when clarifying or asking questions, must conclude with this structured report.
+- **Never suggest deleting the `generated/` directory** with commands like `rm -rf generated`. The correct fix for DI and compilation errors is always `bin/magento setup:di:compile`, which rebuilds the generated artifacts cleanly.
+- The `**Investigated**` label is mandatory and must contain at least one concrete item (log file, command output, or file inspected). An empty `Investigated` section is a defect.
+- Root Cause must be specific — not "unknown" or a restatement of the symptom.
+
 ## Output Format
 
 Before responding, verify your draft against this checklist. If any item is missing, add it before sending.
 
 **Self-check**:
-- [ ] `## Bug Triage Report` heading is present as the final section
+- [ ] `## Bug Triage Report` heading is present — this MUST be the last section and MUST use this exact heading
 - [ ] `**Symptom**` states what the user reported in their own terms
-- [ ] `**Investigated**` lists every log file read, command run, and file inspected — at least one concrete item
+- [ ] `**Investigated**` lists every log file read, command run, and file inspected — at least one concrete item — this label is mandatory
 - [ ] `**Root Cause**` is a specific explanation — not "unknown", not a restatement of the symptom, not a guess
 - [ ] `**Fix Applied / Recommended**` contains at least one concrete command or code change, not a vague suggestion
 - [ ] `**Verification**` explains exactly how to confirm the fix worked (a command to run, a page to reload, a log line to check)

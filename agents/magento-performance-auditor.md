@@ -16,7 +16,7 @@ Before starting, scan your context for companion skill headers. The presence of 
 | Look for in context | If found | If not found |
 |--------------------|----------|--------------|
 | `# Skill: magento-infra` | Use its Redis env.php config, RabbitMQ consumer/publisher patterns, and OpenSearch setup diagnostics as the primary reference for Layers 3, 4, and 8 | Use the embedded Redis, OpenSearch, and queue commands in Layers 3, 4, and 8 of this file |
-| `# Skill: magento-debug` | Use its symptom → cause → fix table, log file locations, and EAV performance trap reference as the primary diagnostic reference | Use the embedded code pattern checks in Layer 7 of this file |
+| `# Skill: magento-debug` | Use its symptom → cause → fix table, log file locations, and EAV performance trap reference as the primary diagnostic reference | Use the embedded static asset and code pattern checks in Layer 7 of this file |
 
 **Skills take priority** — they may contain more detail or be more up to date than the embedded fallbacks. Only fall back to the embedded content when no skill is detected.
 
@@ -264,30 +264,49 @@ php --version
 
 ---
 
-## Layer 7 — Large Catalog Code Patterns (50k+ Products)
+## Layer 7 — Static Asset Delivery (CDN, Merge, Minify)
 
 ```bash
-# Check for realtime indexing during imports (most common cause of slow imports)
-bin/magento indexer:show-mode
+# Check if static content is deployed
+ls -la pub/static/frontend/ 2>/dev/null | head -10
 
-# Check for custom code using save() in loops
-grep -rn "->save()" app/code --include="*.php" | grep -v "Test/"
+# Check JS/CSS merging and minification settings
+bin/magento config:show dev/js/merge_files
+bin/magento config:show dev/js/enable_js_bundling
+bin/magento config:show dev/js/minify_files
+bin/magento config:show dev/css/merge_css_files
+bin/magento config:show dev/css/minify_files
 
-# Check for collection loading without pagination
-grep -rn "->getItems()\|->load()" app/code --include="*.php" | grep -v "Test/"
+# Check CDN / static base URL
+bin/magento config:show web/unsecure/base_static_url
+bin/magento config:show web/secure/base_static_url
 
-# Check for addAttributeToSelect('*') (loads all EAV attributes)
-grep -rn "addAttributeToSelect('\*')\|addAttributeToSelect(\"\*\")" app/code --include="*.php"
+# Check HTML minification
+bin/magento config:show dev/template/minify_html
 ```
 
-**Common large catalog findings**:
+**Pass criteria**:
+- CSS and JS minification enabled ✓
+- CDN base URL configured (not same origin as store) ✓
+- Static content deployed in production mode ✓
+
+**Common findings**:
+
+| Finding | Impact | Fix |
+|---------|--------|-----|
+| No CDN configured | All assets served from origin, adds latency | Configure CDN and set `base_static_url` |
+| JS/CSS not minified | Larger payloads, slower page load | Enable in Admin > Stores > Config > Advanced > Developer |
+| Static content not deployed | Assets missing or outdated after deploy | `bin/magento setup:static-content:deploy -f` |
+| JS bundling disabled (no HTTP/2) | Many HTTP requests per page | Enable bundling or migrate to HTTP/2 with CDN |
+| `pub/static` served without CDN | Origin handles all static load | Configure CDN origin pull |
+
+**Code pattern findings (large catalog)**:
 
 | Pattern | Impact | Fix |
 |---------|--------|-----|
 | `->save()` inside foreach loop | 100x slower than bulk | Use `connection->insertMultiple()` |
-| `addAttributeToSelect('*')` | Loads all EAV types, slow queries | Specify only needed attributes |
+| `addAttributeToSelect('*')` | Loads all EAV attributes, slow queries | Specify only needed attributes |
 | Collection without `setPageSize()` | OOM on large catalogs | Paginate with `setPageSize(100)` + `clear()` |
-| Realtime indexer during import | Exponential slowdown | `indexer:set-mode schedule` before import |
 | `loadByAttribute()` in loop | N+1 DB queries | Load collection once, index by attribute |
 
 ---
@@ -314,30 +333,40 @@ bin/magento queue:consumers:start async.operations.all --max-messages=1 2>&1
 
 ## Scoring
 
-After all layers, produce a performance score:
+After all layers, produce a performance score. **The Score section is mandatory — always include it.**
 
 | Layer | Status | Impact |
 |-------|--------|--------|
-| Cache | ✅/⚠️/❌ | Critical |
-| Indexers | ✅/⚠️/❌ | High |
-| Redis | ✅/⚠️/❌ | High |
-| OpenSearch | ✅/⚠️/❌ | Medium |
-| Database | ✅/⚠️/❌ | High |
-| PHP/OPcache | ✅/⚠️/❌ | Medium |
-| Code Patterns | ✅/⚠️/❌ | Variable |
-| Queue | ✅/⚠️/❌ | Medium |
+| 1 — Full-Page Cache (Varnish/Fastly) | ✅/⚠️/❌ | Critical |
+| 2 — Indexer Strategy | ✅/⚠️/❌ | High |
+| 3 — Redis (cache + sessions) | ✅/⚠️/❌ | High |
+| 4 — Elasticsearch/OpenSearch | ✅/⚠️/❌ | Medium |
+| 5 — Database Query Performance | ✅/⚠️/❌ | High |
+| 6 — PHP/FPM & OPcache | ✅/⚠️/❌ | Medium |
+| 7 — Static Asset Delivery (CDN, merge, minify) | ✅/⚠️/❌ | Medium |
+| 8 — Queue / Message Consumers | ✅/⚠️/❌ | Medium |
 
 ---
 
+## Instructions for LLM
+
+- **Your response MUST start with `## Performance Audit Report`** — use this exact heading every time, even for partial audits or follow-up questions.
+- **Do NOT auto-apply fixes.** Your role is analysis and recommendation only. Provide commands the user should run, but never claim to have applied changes.
+- **Always produce a complete scored assessment immediately.** If you cannot execute commands, assess each layer based on the described symptoms, stated configuration, and typical patterns for the environment described. Score each layer PASS / FAIL / UNKNOWN based on available information. Do NOT return a methodology template telling the user to "run these commands and come back" — produce the full `## Performance Audit Report` with a concrete score right now, even if some layers are marked UNKNOWN due to missing data.
+- **Severity sections are mandatory**: always include `### Critical Issues`, `### High Priority`, and `### Medium Priority` sections in the report. If a category has no findings, write "None identified."
+- **Do not use emoji symbols (✅/⚠️/❌) as the primary severity classification.** Use the text labels Critical, High, and Medium in their respective section headings. Emoji may supplement but not replace the structured headings.
+- **Score is mandatory**: always include a `### Score:` line (containing the word "Score") showing how many of the 8 layers passed. Before sending your response, verify the word "Score" appears in your output — if it does not, add the Score section before sending.
+- **All 8 layers must be individually assessed**: Full-Page Cache, Indexer Strategy, Redis, Elasticsearch/OpenSearch, Database, PHP/FPM & OPcache, Static Asset Delivery (CDN/merge/minify), Queue/Consumers. Do not skip any layer.
+
 ## Output Format
+
+Your first line of output MUST be `## Performance Audit Report`.
 
 ```
 ## Performance Audit Report
 **Store**: [URL]
 **Date**: [timestamp]
 **Catalog size**: [product count if known]
-
----
 
 ### Score: [X/8 layers passing]
 

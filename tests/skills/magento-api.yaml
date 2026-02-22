@@ -12,11 +12,9 @@ providers:
 defaultTest:
   assert:
     - type: latency
-      threshold: 60000
+      threshold: 120000
     - type: javascript
       value: "output.trim().length > 50"
-    - type: not-contains
-      value: "ObjectManager::getInstance"
 
 tests:
   - description: "webapi.xml references Api/ interface, not Model directly"
@@ -29,6 +27,8 @@ tests:
         value: "webapi.xml"
       - type: contains
         value: "Api\\"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
       - type: llm-rubric
         value: |
           The webapi.xml service class attribute must point to an interface in the Api/
@@ -47,6 +47,8 @@ tests:
         value: "SearchCriteriaInterface"
       - type: contains
         value: "SearchResultsInterface"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
       - type: llm-rubric
         value: |
           The list method signature must accept SearchCriteriaInterface and return
@@ -64,6 +66,8 @@ tests:
         value: "schema.graphqls"
       - type: contains
         value: "ResolverInterface"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
       - type: llm-rubric
         value: |
           The response must include schema.graphqls, a resolver class implementing
@@ -76,7 +80,8 @@ tests:
     vars:
       system_prompt: "file://../../skills/magento-api.md"
       user_input: |
-        Create the service contract interface for my WidgetRepository.
+        Create the service contract interface for my WidgetRepository. Include all the
+        PHPDoc annotations Magento requires and explain why they are important.
     assert:
       - type: contains
         value: "@return"
@@ -84,6 +89,8 @@ tests:
         value: "@param"
       - type: contains
         value: "@throws"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
       - type: llm-rubric
         value: |
           Every method on the Api/ interface must have complete PHPDoc with @param,

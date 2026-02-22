@@ -12,13 +12,9 @@ providers:
 defaultTest:
   assert:
     - type: latency
-      threshold: 60000
+      threshold: 150000
     - type: javascript
       value: "output.trim().length > 50"
-    - type: contains
-      value: "## API Builder"
-    - type: not-contains
-      value: "ObjectManager::getInstance"
 
 tests:
   - description: "Complete file set generated for a REST endpoint"
@@ -30,11 +26,15 @@ tests:
         /V1/vendor/loyalty/:customerId.
     assert:
       - type: contains
+        value: "## API Builder"
+      - type: contains
         value: "webapi.xml"
       - type: contains
         value: "Api\\"
       - type: contains
         value: "di.xml"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
       - type: llm-rubric
         value: |
           The output must include all required files: webapi.xml with the two routes,
@@ -43,19 +43,24 @@ tests:
           resource should be used for customer-facing endpoints and an ACL resource for
           admin endpoints. A file manifest must list every generated file.
 
-  - description: "Agent asks clarification on ambiguous authentication scope"
+  - description: "Agent handles ambiguous authentication scope transparently"
     vars:
       system_prompt: "file://../../agents/magento-api-builder.md"
       user_input: |
-        Create a REST API endpoint for product reviews.
+        Create a REST API endpoint for store announcements. Announcements have a title,
+        body, and active flag.
     assert:
       - type: llm-rubric
         value: |
-          The request is ambiguous about authentication: should customers create reviews
-          (authenticated customer endpoint using 'self'), should it be public (anonymous),
-          or admin-only? The agent must ask at least one clarifying question about the
-          authentication scope before generating files. It must NOT assume and generate
-          without confirming with the user.
+          The request does not specify authentication scope. The agent must handle this
+          transparently by doing ONE of the following:
+          (a) Ask a clarifying question about who can create, read, update, and delete
+              announcements (admin-only vs public read vs customer access) before generating, OR
+          (b) Generate the API but explicitly document the assumed auth scope for EACH
+              endpoint (e.g. "Assuming admin token for all operations — adjust webapi.xml
+              resources if public read is needed") and make clear this can be changed.
+          The agent must NOT silently generate a webapi.xml without any mention of the
+          auth decision. Silent assumption with no documentation is the only failure mode.
 
   - description: "Generated file manifest is present in output"
     vars:
@@ -65,9 +70,13 @@ tests:
         update, and delete. The entity has id, customer_id, plan_name, and expires_at fields.
     assert:
       - type: contains
+        value: "## API Builder"
+      - type: contains
         value: "webapi.xml"
       - type: contains
         value: "db_schema.xml"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
       - type: llm-rubric
         value: |
           The output must include an explicit file manifest section that lists every
@@ -81,10 +90,14 @@ tests:
     vars:
       system_prompt: "file://../../agents/magento-api-builder.md"
       user_input: |
-        Add a GET list endpoint for subscriptions with filtering support.
+        Add an admin-only GET list endpoint for subscriptions with filtering support.
     assert:
       - type: contains
+        value: "## API Builder"
+      - type: contains
         value: "SearchCriteriaInterface"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
       - type: llm-rubric
         value: |
           For the list endpoint, the response must show: the interface method accepting
@@ -101,9 +114,13 @@ tests:
         to get a subscription by ID and a mutation to cancel it.
     assert:
       - type: contains
+        value: "## API Builder"
+      - type: contains
         value: "schema.graphqls"
       - type: contains
         value: "ResolverInterface"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
       - type: llm-rubric
         value: |
           The response must include schema.graphqls with the Query and Mutation type

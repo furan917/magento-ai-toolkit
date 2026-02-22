@@ -45,15 +45,28 @@ GraphQL:    Yes
 
 ---
 
+## Instructions for LLM
+
+- **When you generate files, your response MUST start with `## API Builder`** — use this exact heading. Never omit it.
+- **Authentication scope matters** — admin token, customer token (`self`), and anonymous each produce different `<resources>` entries in `webapi.xml`. Infer from context when possible:
+  - "customers can", "/mine" URL pattern, user-specific data → customer token (`self`)
+  - "admins can", "admin panel", "admin token", adjusting another user's data → admin token
+  - Public product/catalog data → anonymous
+  - **Ask only when genuinely ambiguous** — when the operation could reasonably be customer, admin, or public and there are no context clues. For standard CRUD entity APIs with no access hint, default to admin token and state that assumption in your output. Do NOT ask when the context already implies the access type.
+  - **Never silently choose "mixed auth"** (some endpoints customer, some admin, some anonymous) without asking. Mixed authentication is a complex security design decision that must be explicitly confirmed with the user. If you find yourself thinking "GET could be anonymous, POST could be customer, DELETE could be admin" — that IS genuine ambiguity. Stop and ask which access model the user wants.
+- **`di.xml` and all interface/implementation pairs are required** for every generation. Never omit `di.xml` — without it the repository interface is unresolvable.
+- **`db_schema.xml` is required** when entity fields are provided. An API without a schema cannot persist data.
+- **File manifest is mandatory**: always include an explicit list of every file generated, with its path, in the output summary.
+
 ## Clarification Step
 
-Before generating, confirm these if not specified:
+Before generating any code, confirm these if not specified. **If authentication scope is missing, stop and ask — do not assume and generate.**
 
-1. **Module name** — `Vendor_Module` format?
-2. **Entity name** — singular, PascalCase (e.g. `Wishlist`)
-3. **Fields** — name, type, nullable?
-4. **Operations** — which of: get, getList, save (create+update), delete, deleteById?
-5. **Authentication** — admin token, customer token, anonymous, or mixed?
+1. **Module name** — Infer from the entity name when possible (e.g. "subscriptions" → `Vendor_Subscription`, "loyalty points" → `Vendor_Loyalty`). State the assumed name at the top of your output and proceed. Only ask if even the entity is unclear.
+2. **Entity name** — singular, PascalCase. Infer from context (e.g. "subscriptions" → `Subscription`). Ask only if truly ambiguous.
+3. **Fields** — name, type, nullable? For REST, fields are needed for `db_schema.xml`. For GraphQL, generate with common placeholder fields (`id`, `status`, `customer_id`, `created_at`) if not specified, and note they should be adjusted.
+4. **Operations** — which of: get, getList, save (create+update), delete, deleteById? Default to CRUD if not stated.
+5. **Authentication** — admin token, customer token (`self`), anonymous, or mixed? Infer from context (see Instructions above). Ask only when genuinely ambiguous with no context clues.
 6. **GraphQL** — yes/no?
 7. **Target directory** — `app/code/Vendor/Module/` (confirm path exists or should be created)
 
@@ -494,13 +507,15 @@ curl -X POST https://store.test/graphql \
 
 ## Output Format
 
+Your first line of output MUST be `## API Builder` (the heading below starts with this). **Output the file manifest FIRST — before any file content blocks.** This ensures the manifest is visible even if the response is long.
+
 ```
 ## API Builder — Generation Complete
 
 Module: {Vendor}_{Module}
 Entity: {Entity}
 
-Files generated:
+### Files generated:
   ✓ Api/Data/{Entity}Interface.php
   ✓ Api/{Entity}RepositoryInterface.php
   ✓ Model/{Entity}.php
@@ -529,4 +544,8 @@ Next steps:
   bin/magento setup:upgrade
   bin/magento setup:di:compile
   bin/magento cache:flush
+
+---
+[File content follows below]
+---
 ```

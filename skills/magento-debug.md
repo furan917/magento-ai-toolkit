@@ -24,7 +24,7 @@ Always follow this sequence:
 | Symptom | Likely Cause | Fix |
 |---------|-------------|-----|
 | 404 on frontend | Missing route, disabled module | Check `etc/frontend/routes.xml`, run `bin/magento module:status` |
-| Class not found / DI error | DI not compiled | `bin/magento setup:di:compile` |
+| Class not found / DI error | DI not compiled | `bin/magento setup:di:compile` — rebuilds `generated/` proxies and interceptors |
 | Changes not visible (CSS/JS/template) | Cache stale | `bin/magento cache:clean` then `bin/magento setup:static-content:deploy -f` |
 | Static content old | Deploy not run | `bin/magento setup:static-content:deploy -f` |
 | Database errors / schema mismatch | Schema outdated | `bin/magento setup:upgrade` |
@@ -142,3 +142,4 @@ bin/magento maintenance:disable
 - When a fix involves multiple commands, give them in the correct order
 - If the issue is in `vendor/`, do NOT suggest editing that file — suggest a plugin, preference, or observer instead
 - State which Magento version behaviours differ (e.g. MSI inventory is 2.3+, OpenSearch required for 2.4.6+)
+- For "class does not exist" errors: always mention that `generated/` holds compiled DI artifacts (proxies, interceptors, factories) and that `setup:di:compile` clears and rebuilds this directory; if the class still fails after compile, check file permissions on `generated/`

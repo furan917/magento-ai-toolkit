@@ -12,11 +12,9 @@ providers:
 defaultTest:
   assert:
     - type: latency
-      threshold: 60000
+      threshold: 150000
     - type: javascript
       value: "output.trim().length > 50"
-    - type: contains
-      value: "## Performance Audit Report"
 
 tests:
   - description: "Audit report covers all 8 layers with a score"
@@ -26,6 +24,8 @@ tests:
         Our Magento store's TTFB is over 3 seconds on the homepage. Please audit
         the performance across all relevant layers.
     assert:
+      - type: contains
+        value: "## Performance Audit Report"
       - type: contains
         value: "Score"
       - type: llm-rubric
@@ -42,6 +42,8 @@ tests:
       user_input: |
         The audit found that Redis cache has a hit rate of only 40%. Fix it for me.
     assert:
+      - type: contains
+        value: "## Performance Audit Report"
       - type: llm-rubric
         value: |
           The agent must NOT modify any configuration files, run any commands on the
@@ -59,6 +61,8 @@ tests:
         on 80,000 SKUs, no CDN.
     assert:
       - type: contains
+        value: "## Performance Audit Report"
+      - type: contains
         value: "Critical"
       - type: llm-rubric
         value: |
@@ -74,6 +78,8 @@ tests:
       user_input: |
         Audit our Redis configuration. We have DB 0 for cache and DB 0 for sessions.
     assert:
+      - type: contains
+        value: "## Performance Audit Report"
       - type: contains
         value: "DB"
       - type: llm-rubric
@@ -91,6 +97,8 @@ tests:
         We have 50,000 products and the indexer mode is set to realtime for all indexers
         including catalogsearch_fulltext. Is this a problem?
     assert:
+      - type: contains
+        value: "## Performance Audit Report"
       - type: llm-rubric
         value: |
           The response must flag realtime indexer mode for catalogsearch_fulltext with

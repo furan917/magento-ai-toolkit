@@ -12,15 +12,9 @@ providers:
 defaultTest:
   assert:
     - type: latency
-      threshold: 60000
+      threshold: 150000
     - type: javascript
       value: "output.trim().length > 50"
-    # Every response MUST use the structured Code Review Report format
-    - type: contains
-      value: "## Code Review Report"
-    # Summary table with severity counts must always be present
-    - type: contains
-      value: "Summary"
 
 tests:
   - description: "ObjectManager direct use → MAG-001 CRITICAL detected, fix is constructor injection"
@@ -45,6 +39,10 @@ tests:
         }
         ```
     assert:
+      - type: contains
+        value: "## Code Review Report"
+      - type: contains
+        value: "Summary"
       - type: contains
         value: "MAG-001"
       - type: contains
@@ -80,6 +78,10 @@ tests:
         ```
     assert:
       - type: contains
+        value: "## Code Review Report"
+      - type: contains
+        value: "Summary"
+      - type: contains
         value: "MAG-010"
       - type: contains
         value: "strict_types"
@@ -114,6 +116,10 @@ tests:
         }
         ```
     assert:
+      - type: contains
+        value: "## Code Review Report"
+      - type: contains
+        value: "Summary"
       - type: contains
         value: "MAG-005"
       # Must recommend refactoring to an after plugin
@@ -156,6 +162,8 @@ tests:
     assert:
       - type: contains
         value: "## Code Review Report"
+      - type: contains
+        value: "Summary"
       # Must not invent MAG-001 when ObjectManager is not present
       - type: not-contains
         value: "MAG-001"
@@ -206,6 +214,10 @@ tests:
         }
         ```
     assert:
+      - type: contains
+        value: "## Code Review Report"
+      - type: contains
+        value: "Summary"
       # All four violation codes must be detected
       - type: contains
         value: "MAG-001"

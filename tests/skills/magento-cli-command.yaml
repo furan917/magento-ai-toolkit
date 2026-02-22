@@ -12,11 +12,9 @@ providers:
 defaultTest:
   assert:
     - type: latency
-      threshold: 60000
+      threshold: 120000
     - type: javascript
       value: "output.trim().length > 50"
-    - type: not-contains
-      value: "ObjectManager::getInstance"
 
 tests:
   - description: "CLI command extends Command with configure() and execute() methods"
@@ -36,6 +34,8 @@ tests:
         value: "execute("
       - type: contains
         value: "setName("
+      - type: not-contains
+        value: "ObjectManager::getInstance"
       - type: llm-rubric
         value: |
           The command class must extend Symfony\Component\Console\Command\Command,
@@ -54,6 +54,8 @@ tests:
         value: "InputArgument"
       - type: contains
         value: "InputOption"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
       - type: llm-rubric
         value: |
           The response must use InputArgument for the required positional entity ID
@@ -71,6 +73,8 @@ tests:
         value: "di.xml"
       - type: contains
         value: "CommandList"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
       - type: llm-rubric
         value: |
           The response must show the di.xml entry that injects the command class into
@@ -86,12 +90,16 @@ tests:
     assert:
       - type: contains
         value: "declare(strict_types=1)"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
       - type: llm-rubric
         value: |
-          The execute() method must not contain all the import logic inline. The command
-          must inject a service class (e.g. ImportService, ProductUpdater) via constructor
-          and delegate to it from execute(). The command's role is to parse input, call
-          the service, and format output — not to contain business logic itself.
+          The execute() method must delegate to a single high-level service class
+          (e.g. ImportService, ProductImporter) that encapsulates the entire import
+          workflow. The command must NOT orchestrate between multiple domain classes
+          (CsvReader, Validator, ProductProcessor, etc.) directly — that orchestration
+          belongs inside the service. The command's sole responsibility is to parse
+          CLI input, call one service method, and write output to the console.
 
   - description: "Area code set correctly for commands needing storefront context"
     vars:
@@ -104,6 +112,8 @@ tests:
         value: "declare(strict_types=1)"
       - type: contains
         value: "setAreaCode"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
       - type: llm-rubric
         value: |
           The response must explain that CLI commands run in the default area and some

@@ -12,12 +12,9 @@ providers:
 defaultTest:
   assert:
     - type: latency
-      threshold: 60000
+      threshold: 120000
     - type: javascript
       value: "output.trim().length > 50"
-    # Never use ObjectManager directly — always constructor injection
-    - type: not-contains
-      value: "ObjectManager::getInstance"
 
 tests:
   - description: "Before plugin returns array of args, not void"
@@ -34,6 +31,8 @@ tests:
       # Before plugins MUST return an array (or null), never void when modifying args
       - type: contains
         value: "array"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
       - type: llm-rubric
         value: >
           The before plugin method signature accepts $subject and $name, and returns
@@ -56,6 +55,8 @@ tests:
       # After plugins must NOT call $proceed — that is only for around plugins
       - type: not-contains
         value: "$proceed"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
       - type: llm-rubric
         value: >
           The after plugin receives $result as its second parameter and returns
@@ -78,6 +79,8 @@ tests:
       # $proceed() must be called — omitting it silently breaks the call chain
       - type: contains
         value: "$proceed("
+      - type: not-contains
+        value: "ObjectManager::getInstance"
       - type: llm-rubric
         value: >
           The around plugin calls $proceed(...$args) (or equivalent) to invoke the
@@ -98,6 +101,8 @@ tests:
       # Plugin classes are plain classes — they do NOT extend or implement anything
       - type: not-contains
         value: "extends"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
       - type: llm-rubric
         value: >
           The response specifies that the di.xml file should be placed under

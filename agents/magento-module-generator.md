@@ -63,9 +63,20 @@ Optional:    Observer on product_save_after, Unit tests
 
 ---
 
+## Instructions for LLM
+
+- **When you generate files, your response MUST start with `## Module Generator`** — use this exact heading for completed generations. Never omit it.
+- **If any Required item is missing, your ENTIRE response must be clarifying questions only.** Output no PHP, no XML, no file listings, no file paths, no code blocks, no examples of what you will generate. Do not list `module.xml`, `registration.php`, or any other file name in your clarification message. A vague concept like "a subscriptions module" is not sufficient — you need the Vendor name, Module name, entity fields, and confirmed features before writing any code.
+- **Use constructor injection only** — never `ObjectManager::getInstance()`. Every generated PHP class must declare `declare(strict_types=1)`.
+- **Never use `InstallSchema.php` or `UpgradeSchema.php`** — always use `db_schema.xml` (declarative schema).
+- **Data patches must implement `DataPatchInterface`** — never use the deprecated `InstallData.php` or `UpgradeData.php`.
+- **Never delete or suggest deleting the `generated/` directory** — use `bin/magento setup:di:compile` instead.
+
 ## Clarification Step
 
 **Stop before generating any files.** Read the user's description and identify every item below that is missing or ambiguous. If anything is unclear, ask all your questions in a single message — do not generate files first and ask later, and do not invent or assume values for missing items.
+
+**If all Required items below are not provided, respond with clarifying questions only — no code, no files, no XML, no file names, no examples of generated output.**
 
 Ask only about what is genuinely unclear. If the user has already provided a value, do not ask for it again.
 
@@ -74,7 +85,7 @@ Ask only about what is genuinely unclear. If the user has already provided a val
 1. **Vendor and Module name** — must be `Vendor_Module` format. If only a concept is given ("a wishlist module"), ask what vendor/module name they want.
 2. **Entity name(s)** — the main data object(s) the module manages. Must be concrete (e.g. `ProductNote`, `StoreLocator`) — do not invent one from the description.
 3. **Fields** — for each entity: field name, data type (`int`, `varchar`, `text`, `decimal`, `boolean`, `timestamp`), nullable or not, and default value if any. Do not add fields that were not specified.
-4. **Magento dependencies** — which core modules does this touch? (Catalog, Sales, Customer, Quote, etc.) Needed to populate `<sequence>` in `module.xml` and foreign key references in `db_schema.xml`.
+4. **Magento dependencies** — which core modules does this touch? (Catalog, Sales, Customer, Quote, etc.) Needed to determine module load order and foreign key references.
 
 **Required — confirm the feature scope:**
 
@@ -300,6 +311,67 @@ ComponentRegistrar::register(
 
 ---
 
+## Data Patch Template (for EAV attribute installs and seed data)
+
+Use `DataPatchInterface` — never `InstallData.php` or `UpgradeData.php`.
+
+```php
+<?php
+declare(strict_types=1);
+
+namespace {Vendor}\{Module}\Setup\Patch\Data;
+
+use Magento\Eav\Setup\EavSetupFactory;
+use Magento\Framework\Setup\ModuleDataSetupInterface;
+use Magento\Framework\Setup\Patch\DataPatchInterface;
+
+class Add{AttributeCode}Attribute implements DataPatchInterface
+{
+    public function __construct(
+        private readonly ModuleDataSetupInterface $moduleDataSetup,
+        private readonly EavSetupFactory $eavSetupFactory
+    ) {
+    }
+
+    public function apply(): self
+    {
+        $this->moduleDataSetup->startSetup();
+
+        $eavSetup = $this->eavSetupFactory->create(['setup' => $this->moduleDataSetup]);
+        $eavSetup->addAttribute(
+            \Magento\Catalog\Model\Product::ENTITY,
+            '{attribute_code}',
+            [
+                'type'         => 'varchar',
+                'label'        => '{Attribute Label}',
+                'input'        => 'text',
+                'required'     => false,
+                'sort_order'   => 100,
+                'global'       => \Magento\Eav\Model\Entity\Attribute\ScopedAttributeInterface::SCOPE_STORE,
+                'visible'      => true,
+                'user_defined' => true,
+                'used_in_product_listing' => true,
+            ]
+        );
+
+        $this->moduleDataSetup->endSetup();
+        return $this;
+    }
+
+    public static function getDependencies(): array
+    {
+        return [];
+    }
+
+    public function getAliases(): array
+    {
+        return [];
+    }
+}
+```
+
+---
+
 ## Admin Grid (UI Component Pattern)
 
 ### etc/adminhtml/menu.xml
@@ -422,6 +494,8 @@ bin/magento module:status {Vendor}_{Module}
 ---
 
 ## Output Format
+
+Your first line of output MUST be `## Module Generator` (the heading below starts with this). Always include the complete file manifest and install commands — even for minimal modules.
 
 ```
 ## Module Generator — Complete
