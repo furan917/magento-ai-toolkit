@@ -1,0 +1,181 @@
+import:
+  - ../promptfooconfig.yaml
+
+description: Tests for agents/magento-agent-amqp.md
+
+prompts:
+  - file://../prompts/agent-wrapper.json
+
+providers:
+  - file://../providers.yaml
+
+defaultTest:
+  assert:
+    - type: latency
+      threshold: 150000
+    - type: javascript
+      value: "output.trim().length > 50"
+
+tests:
+  - description: "Report sections present; backlog traced to no consumer running / missing maxMessages"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-amqp/SKILL.md"
+      user_input: >
+        Our async.operations.all queue has 45,000 messages and the depth keeps
+        growing. bin/magento queue:consumers:list shows the consumer is registered,
+        but nothing is draining. Please diagnose.
+    assert:
+      - type: contains
+        value: "## AMQP Report"
+      - type: contains
+        value: "**Mode**"
+      - type: contains
+        value: "**Investigated**"
+      - type: contains
+        value: "**Root Cause"
+      - type: contains
+        value: "**Verification**"
+      # Must actually check whether the consumer process is running
+      - type: regex
+        value: "ps aux|queue:consumers:start|cron_consumers_runner|Supervisor|systemd"
+      - type: llm-rubric
+        value: >
+          The AMQP Report distinguishes between a consumer being *registered*
+          (declared in queue_consumer.xml) and a consumer *process actually running*.
+          The Investigated section includes at least one check that the consumer
+          process is alive (ps aux, supervisorctl status, or cron_consumers_runner
+          in env.php). The Root Cause identifies a concrete reason the queue is not
+          draining — e.g. no consumer process launched, cron not processing, maxMessages
+          too low, or handler crashing silently. The Verification includes watching
+          queue depth return to 0 after the fix.
+
+  - description: "Stuck consumer traced to OOM / missing maxMessages; setting recommended"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-amqp/SKILL.md"
+      user_input: >
+        Our vendor.module.export.consumer runs for about 90 seconds after start,
+        then exits. var/log/system.log shows "Allowed memory size of 2147483648
+        bytes exhausted". The consumer XML has no maxMessages attribute. What's
+        the correct fix?
+    assert:
+      - type: contains
+        value: "## AMQP Report"
+      - type: contains
+        value: "**Mode**"
+      - type: contains
+        value: "**Investigated**"
+      - type: contains
+        value: "**Root Cause"
+      - type: contains
+        value: "**Verification**"
+      # maxMessages must be part of the fix
+      - type: contains
+        value: "maxMessages"
+      - type: llm-rubric
+        value: >
+          The AMQP Report identifies the root cause as a long-running PHP consumer
+          accumulating memory without the maxMessages bound that forces a clean
+          exit-and-restart cycle. The Fix sets maxMessages in queue_consumer.xml
+          (typically 1000 for cron-managed consumers) so the consumer exits
+          cleanly before hitting memory_limit and is restarted by cron or Supervisor
+          with a fresh process. The response does NOT recommend simply raising
+          memory_limit as the primary fix, because the leak will recur at any limit.
+
+  - description: "AmazonMQ connection refused traced to port 5672 / missing SSL"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-amqp/SKILL.md"
+      user_input: >
+        We migrated to AmazonMQ for RabbitMQ and now get
+        "AMQPConnectionException: Connection refused" on every publish. Our
+        env.php has 'port' => '5672' and 'ssl' => false. The endpoint is
+        b-abc123.mq.us-east-1.amazonaws.com. Please diagnose.
+    assert:
+      - type: contains
+        value: "## AMQP Report"
+      - type: contains
+        value: "**Root Cause"
+      - type: contains
+        value: "**Investigated**"
+      - type: contains
+        value: "**Verification**"
+      # Correct port and SSL setting must be named
+      - type: contains
+        value: "5671"
+      - type: regex
+        value: "ssl.*true|'ssl' => true|ssl=> true"
+      - type: llm-rubric
+        value: >
+          The AMQP Report identifies the root cause as the client trying to
+          connect over plaintext AMQP port 5672 to an AmazonMQ RabbitMQ broker
+          that only accepts TLS connections on port 5671. The Fix changes
+          env.php to 'port' => '5671' and 'ssl' => true, and typically adds an
+          ssl_options section with a cafile path. The response makes clear that
+          TLS on 5671 is mandatory for AmazonMQ RabbitMQ — it is acceptable
+          (and more accurate) for the response to state that port 5672 is not
+          listening on the broker at all, rather than attributing the failure
+          to a security group rule.
+
+  - description: "Full scaffold: four XML files, publisher, consumer, maxMessages, setup:upgrade"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-amqp/SKILL.md"
+      user_input: >
+        Scaffold a new async queue for Vendor_Module. Topic is
+        vendor.module.order.export, payload interface is
+        Vendor\Module\Api\Data\OrderExportMessageInterface, adapter is amqp.
+        Include all four XML files, the publisher class, the consumer class,
+        and the deployment commands.
+    assert:
+      - type: contains
+        value: "## AMQP Report"
+      - type: contains
+        value: "declare(strict_types=1)"
+      # All four XML files are required
+      - type: contains
+        value: "communication.xml"
+      - type: contains
+        value: "queue_topology.xml"
+      - type: contains
+        value: "queue_consumer.xml"
+      - type: contains
+        value: "queue_publisher.xml"
+      # maxMessages is mandatory in production
+      - type: contains
+        value: "maxMessages"
+      # setup:upgrade registers the topology
+      - type: contains
+        value: "setup:upgrade"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: llm-rubric
+        value: >
+          The scaffold includes all four XML configuration files with consistent
+          topic and queue names across them: communication.xml declares the topic
+          and handler, queue_topology.xml declares the exchange and binding,
+          queue_consumer.xml declares the consumer with maxMessages set,
+          queue_publisher.xml declares the publisher. The Publisher and Consumer
+          classes both start with declare(strict_types=1), use constructor
+          injection via readonly promoted properties, and never reference
+          ObjectManager. The deployment commands include stopping consumers
+          before maintenance mode, running setup:upgrade and setup:di:compile,
+          then starting the new consumer.
+
+  - description: "Agent refuses to edit vendor/ files for consumer bug; recommends plugin or preference"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-amqp/SKILL.md"
+      user_input: >
+        The bug is in vendor/magento/module-asynchronous-operations/Model/MassConsumer.php
+        — it swallows handler exceptions. Can you edit that file to log them
+        properly?
+    assert:
+      - type: contains
+        value: "## AMQP Report"
+      # Must point to a Magento-supported extension mechanism
+      - type: regex
+        value: "plugin|preference|override|around|before|after"
+      - type: llm-rubric
+        value: >
+          The agent explicitly refuses to modify vendor/ files and instead
+          recommends a Magento preference or plugin (interceptor) to override
+          or wrap the MassConsumer behaviour, keeping the extension in app/code.
+          The response explains that vendor/ edits would be overwritten by the
+          next composer update and break Magento's package integrity checks.

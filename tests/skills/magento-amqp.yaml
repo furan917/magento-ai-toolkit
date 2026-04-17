@@ -1,0 +1,123 @@
+import:
+  - ../promptfooconfig.yaml
+
+description: Tests for skills/magento-amqp.md
+
+prompts:
+  - file://../prompts/skill-wrapper.json
+
+providers:
+  - file://../providers.yaml
+
+defaultTest:
+  assert:
+    - type: latency
+      threshold: 120000
+    - type: javascript
+      value: "output.trim().length > 50"
+
+tests:
+  - description: "All four XML files required; missing any causes silent failure"
+    vars:
+      system_prompt: "file://../../skills/magento-amqp/SKILL.md"
+      user_input: >
+        Set up an asynchronous import queue in Magento 2 using RabbitMQ.
+        The topic is vendor.module.import.process and the consumer should
+        handle ImportMessageInterface payloads.
+    assert:
+      # All four XML files are mandatory
+      - type: contains
+        value: "communication.xml"
+      - type: contains
+        value: "queue_topology.xml"
+      - type: contains
+        value: "queue_consumer.xml"
+      - type: contains
+        value: "queue_publisher.xml"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: llm-rubric
+        value: >
+          The response mentions all four required XML configuration files:
+          communication.xml (declares topics and handlers), queue_topology.xml
+          (declares exchanges and bindings), queue_consumer.xml (declares the consumer),
+          and queue_publisher.xml (declares the publisher). It explains that all four
+          are required — omitting any one causes the queue to silently fail.
+
+  - description: "DB adapter requires no external broker; connection attribute set to db"
+    vars:
+      system_prompt: "file://../../skills/magento-amqp/SKILL.md"
+      user_input: >
+        I don't have RabbitMQ installed and don't want to add it. How do I use
+        Magento's message queue for async processing without an external broker?
+    assert:
+      # DB adapter is the answer
+      - type: regex
+        value: "db.*adapter|adapter.*db|connection.*db|db.*connection"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: llm-rubric
+        value: >
+          The response explains the DB adapter, which uses MySQL queue_message and
+          queue_message_status tables as the queue backend with no external broker
+          required. It shows how to set the connection attribute to "db" in
+          queue_consumer.xml and queue_publisher.xml, and notes the DB adapter's
+          limitations (not suitable for high volume or fan-out patterns).
+
+  - description: "AmazonMQ for RabbitMQ requires SSL on port 5671, not 5672"
+    vars:
+      system_prompt: "file://../../skills/magento-amqp/SKILL.md"
+      user_input: >
+        We're using AmazonMQ for RabbitMQ. Show me the env.php queue configuration.
+    assert:
+      # AmazonMQ uses SSL (port 5671)
+      - type: regex
+        value: "ssl.*true|5671|ssl_options"
+      # Must not use the unencrypted port
+      - type: not-contains
+        value: "'port' => '5672'"
+      - type: llm-rubric
+        value: >
+          The env.php configuration for AmazonMQ for RabbitMQ sets ssl to true and
+          uses port 5671 (the SSL AMQP port, not the plaintext 5672). It includes the
+          AmazonMQ FQDN endpoint format. It notes that AmazonMQ's security groups
+          typically block port 5672 and that SSL is required.
+
+  - description: "maxMessages required in production to prevent consumer memory leaks"
+    vars:
+      system_prompt: "file://../../skills/magento-amqp/SKILL.md"
+      user_input: >
+        How should I configure the consumer in queue_consumer.xml for a production
+        deployment? What happens if I don't set maxMessages?
+    assert:
+      - type: contains
+        value: "maxMessages"
+      - type: llm-rubric
+        value: >
+          The response explains that maxMessages in queue_consumer.xml controls how many
+          messages the consumer processes before exiting. It must be set in production
+          to prevent memory leaks — without it, a long-running consumer accumulates
+          memory until it is killed by the OS. It recommends using cron_consumers_runner
+          in env.php as the production pattern for cron-managed consumers.
+
+  - description: "Consumer stopped before maintenance mode; setup:upgrade required after XML changes"
+    vars:
+      system_prompt: "file://../../skills/magento-amqp/SKILL.md"
+      user_input: >
+        I've added the four XML config files for my new queue. What are the deployment
+        steps? Also, should I stop consumers during a deployment?
+    assert:
+      - type: contains
+        value: "setup:upgrade"
+      # Consumers must be stopped before maintenance mode
+      - type: regex
+        value: "stop.*consumer|consumer.*stop|maintenance"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: llm-rubric
+        value: >
+          The response states that consumers must be stopped before enabling Magento
+          maintenance mode to avoid processing messages against a locked application.
+          It also states that bin/magento setup:upgrade must be run after adding XML
+          config files (communication.xml, queue_topology.xml, etc.) to register the
+          queue topology with Magento.

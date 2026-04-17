@@ -1,0 +1,134 @@
+import:
+  - ../promptfooconfig.yaml
+
+description: Tests for skills/magento-indexer.md
+
+prompts:
+  - file://../prompts/skill-wrapper.json
+
+providers:
+  - file://../providers.yaml
+
+defaultTest:
+  assert:
+    - type: latency
+      threshold: 120000
+    - type: javascript
+      value: "output.trim().length > 50"
+
+tests:
+  - description: "Action class implements both ActionInterface and MviewActionInterface"
+    vars:
+      system_prompt: "file://../../skills/magento-indexer/SKILL.md"
+      user_input: >
+        Create a custom Magento 2 indexer that watches the catalog_product_entity table
+        and writes data into a flat index table called vendor_module_custom_index.
+        Show the Action class.
+    assert:
+      - type: contains
+        value: "declare(strict_types=1)"
+      # Must implement ActionInterface for full/row reindex
+      - type: regex
+        value: "ActionInterface"
+      # Must also implement MviewActionInterface so mview processor can call execute()
+      - type: regex
+        value: "MviewActionInterface"
+      - type: contains
+        value: "executeFull"
+      - type: contains
+        value: "executeList"
+      # MviewActionInterface entry point — distinct from executeList
+      - type: contains
+        value: "execute("
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: llm-rubric
+        value: >
+          The Action class implements both ActionInterface (with executeFull, executeList,
+          executeRow) and MviewActionInterface (with execute). The execute method delegates
+          to executeList. All dependencies are injected via constructor, not ObjectManager.
+
+  - description: "indexer.xml view_id matches mview.xml id — mismatch silently breaks incremental"
+    vars:
+      system_prompt: "file://../../skills/magento-indexer/SKILL.md"
+      user_input: >
+        Generate the indexer.xml and mview.xml for a custom indexer with ID
+        vendor_module_custom. It should subscribe to the catalog_product_entity table.
+    assert:
+      - type: contains
+        value: "indexer.xsd"
+      - type: contains
+        value: "mview.xsd"
+      - type: contains
+        value: "vendor_module_custom"
+      # view_id in indexer.xml must match the id in mview.xml
+      - type: contains
+        value: "view_id"
+      - type: contains
+        value: "catalog_product_entity"
+      - type: llm-rubric
+        value: >
+          The indexer.xml uses a view_id attribute whose value exactly matches the id
+          attribute in mview.xml. The mview.xml subscriptions section includes
+          catalog_product_entity with entity_column="entity_id".
+
+  - description: "executeFull uses insertMultiple in batches, not row-by-row inserts"
+    vars:
+      system_prompt: "file://../../skills/magento-indexer/SKILL.md"
+      user_input: >
+        Implement the ResourceModel reindex logic for a full reindex of 500,000 products.
+        It should insert data into the flat index table efficiently.
+    assert:
+      - type: contains
+        value: "declare(strict_types=1)"
+      # insertMultiple is the correct batch insert method
+      - type: contains
+        value: "insertMultiple"
+      # Must not insert row by row
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: llm-rubric
+        value: >
+          The reindex implementation uses insertMultiple() to insert rows in batches
+          (e.g. 500–1000 rows per call) rather than inserting rows one at a time.
+          It truncates the index table before a full reindex and uses a generator or
+          paginated SELECT to avoid loading all rows into memory at once.
+
+  - description: "Schedule mode with mview recommended for large catalog; realtime discouraged"
+    vars:
+      system_prompt: "file://../../skills/magento-indexer/SKILL.md"
+      user_input: >
+        We have 150,000 products. Should we run our custom indexer in realtime or
+        schedule mode? What CLI commands do we use?
+    assert:
+      # Must recommend schedule mode for large catalogs
+      - type: regex
+        value: "schedule|Update by Schedule"
+      - type: contains
+        value: "indexer:set-mode"
+      # Must provide the CLI command to switch
+      - type: regex
+        value: "indexer:set-mode schedule"
+      - type: llm-rubric
+        value: >
+          The response recommends Update by Schedule (schedule mode) for a 150,000
+          product catalog and explains that realtime mode triggers a full or partial
+          reindex synchronously on every product save, which causes slow saves at that
+          scale. It includes the correct CLI command: bin/magento indexer:set-mode schedule.
+
+  - description: "Never suggests deleting generated/ directory for indexer DI errors"
+    vars:
+      system_prompt: "file://../../skills/magento-indexer/SKILL.md"
+      user_input: >
+        After creating my custom indexer, I get the error:
+        "Intercepted class Vendor\Module\Model\Indexer\CustomIndexerAction does not exist."
+        How do I fix this?
+    assert:
+      - type: contains
+        value: "setup:di:compile"
+      - type: llm-rubric
+        value: >
+          The response identifies the error as a DI compilation issue (missing generated
+          interceptors) and recommends running bin/magento setup:di:compile as the
+          primary fix. It does not recommend deleting the generated/ directory as the
+          fix — warning readers against `rm -rf generated/` is acceptable and expected.

@@ -1,0 +1,175 @@
+import:
+  - ../promptfooconfig.yaml
+
+description: Tests for agents/magento-agent-cache.md
+
+prompts:
+  - file://../prompts/agent-wrapper.json
+
+providers:
+  - file://../providers.yaml
+
+defaultTest:
+  assert:
+    - type: latency
+      threshold: 150000
+    - type: javascript
+      value: "output.trim().length > 50"
+
+tests:
+  - description: "Report sections present; FPC bypass traced to cacheable=false block"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-cache/SKILL.md"
+      user_input: >
+        Our Magento product pages have a TTFB of 3 seconds despite FPC being enabled.
+        The X-Magento-Cache-Debug header always shows MISS. Please diagnose why
+        full-page cache is not working.
+    assert:
+      - type: contains
+        value: "## Cache Report"
+      - type: contains
+        value: "**Mode**"
+      - type: contains
+        value: "**Investigated**"
+      - type: contains
+        value: "**Root Cause"
+      - type: contains
+        value: "**Verification**"
+      # cacheable=false is the most common FPC bypass cause
+      - type: regex
+        value: "cacheable.*false|cacheable=\"false\""
+      # cache:status should be checked
+      - type: contains
+        value: "cache:status"
+      - type: llm-rubric
+        value: >
+          The Cache Report includes all required sections (Mode, Investigated, Root
+          Cause, Fix/Implementation, Verification). The investigation checks cache:status
+          and searches for cacheable="false" blocks in layout XML. The Root Cause section
+          identifies at least one concrete FPC bypass cause (e.g. cacheable="false" block,
+          developer mode, disabled FPC). The Verification includes checking the
+          X-Magento-Cache-Debug header for HIT status after the fix.
+
+  - description: "cacheable=false not recommended; customer-data sections recommended instead"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-cache/SKILL.md"
+      user_input: >
+        My developer added cacheable="false" to our product page header block so it
+        can show the logged-in customer name. Now our entire site TTFB is 2.5 seconds.
+        What should we do instead?
+    assert:
+      - type: contains
+        value: "## Cache Report"
+      - type: contains
+        value: "**Mode**"
+      - type: contains
+        value: "**Investigated**"
+      - type: contains
+        value: "**Root Cause"
+      - type: contains
+        value: "**Verification**"
+      # Must warn that cacheable=false disables FPC for the entire page
+      - type: regex
+        value: "entire page|whole page|full.?page"
+      # Must recommend customer-data sections as the fix
+      - type: regex
+        value: "customer.?data|sections|private.?content|sections\\.xml"
+      - type: llm-rubric
+        value: >
+          The Cache Report identifies cacheable="false" on the header block as the root
+          cause of FPC being disabled site-wide. It explicitly states that cacheable="false"
+          on any block disables full-page cache for the entire page. It recommends
+          replacing the block with a customer-data section (sections.xml) to load the
+          customer name via JavaScript after the cached page is served, keeping FPC intact.
+
+  - description: "Redis flushall never recommended; flushdb for specific DB only"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-cache/SKILL.md"
+      user_input: >
+        Our Redis cache has a hit rate of only 30% and used_memory is at 95% of
+        maxmemory. evicted_keys is growing. How should we resolve this?
+    assert:
+      - type: contains
+        value: "## Cache Report"
+      - type: contains
+        value: "**Mode**"
+      - type: contains
+        value: "**Investigated**"
+      - type: contains
+        value: "**Root Cause"
+      - type: contains
+        value: "**Verification**"
+      # Must mention maxmemory as the fix lever
+      - type: regex
+        value: "maxmemory|max.?memory|memory.*limit"
+      - type: llm-rubric
+        value: >
+          The Cache Report identifies the root cause as Redis memory pressure causing
+          cache eviction (evidenced by evicted_keys > 0 and high memory usage). It
+          recommends increasing maxmemory or adding a Redis node. It does NOT recommend
+          redis-cli flushall (which would log out all customers by destroying sessions).
+          The Verification includes checking that evicted_keys stops growing and hit
+          rate improves above 80%.
+
+  - description: "Stale price traced to invalid indexer, not cache; indexer:reindex recommended"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-cache/SKILL.md"
+      user_input: >
+        After a product price update in the admin, the frontend still shows the old
+        price even after running bin/magento cache:flush. What is causing this?
+    assert:
+      - type: contains
+        value: "## Cache Report"
+      - type: contains
+        value: "**Mode**"
+      - type: contains
+        value: "**Investigated**"
+      - type: contains
+        value: "**Root Cause"
+      - type: contains
+        value: "**Verification**"
+      # Stale price after flush = indexer issue, not cache
+      - type: regex
+        value: "indexer|index|catalog_product_price"
+      - type: llm-rubric
+        value: >
+          The Cache Report identifies that a stale price persisting after cache:flush is
+          typically caused by the catalog_product_price indexer being invalid or in
+          a non-realtime mode, not by a cache configuration issue. The Fix recommends
+          checking bin/magento indexer:status and running bin/magento indexer:reindex
+          catalog_product_price. The investigation includes checking indexer status,
+          not just cache status.
+
+  - description: "Custom cache type scaffold: TagScope, cache.xml, save/load pattern, setup:upgrade"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-cache/SKILL.md"
+      user_input: >
+        Scaffold a custom cache type for Vendor_Module that caches external API
+        responses. The cache should be invalidated when a product is saved.
+        Include the class, cache.xml, save/load usage, and the invalidation observer.
+    assert:
+      - type: contains
+        value: "## Cache Report"
+      - type: contains
+        value: "declare(strict_types=1)"
+      # TagScope is the correct base class
+      - type: contains
+        value: "TagScope"
+      - type: contains
+        value: "cache.xml"
+      # setup:upgrade needed to register new cache type
+      - type: contains
+        value: "setup:upgrade"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: llm-rubric
+        value: >
+          The scaffolded cache type extends TagScope with TYPE_IDENTIFIER and CACHE_TAG
+          constants. The cache.xml registers the type with a name matching TYPE_IDENTIFIER.
+          The usage example uses SerializerInterface for serialisation. The invalidation
+          observer listens on catalog_product_save_after and invalidates by tag using
+          the cache type's clean() method with \Zend_Cache::CLEANING_MODE_MATCHING_TAG
+          and the CACHE_TAG constant (NOT CacheManager::clean(), which takes cache type
+          identifiers, not tags). The response includes a note that bin/magento
+          setup:upgrade must be run to register the new cache type. No ObjectManager
+          usage appears anywhere.

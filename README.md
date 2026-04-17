@@ -84,28 +84,37 @@ magento-ai-toolkit/
 ├── README.md
 ├── package.json
 ├── skills/                               # Stateless reference skills (Agent Skills format)
+│   ├── magento-amqp/SKILL.md
 │   ├── magento-api/SKILL.md
+│   ├── magento-cache/SKILL.md
 │   ├── magento-cli-command/SKILL.md
 │   ├── magento-db-schema/SKILL.md
 │   ├── magento-debug/SKILL.md
 │   ├── magento-deploy/SKILL.md
 │   ├── magento-hyva/SKILL.md
+│   ├── magento-indexer/SKILL.md
 │   ├── magento-infra/SKILL.md
 │   ├── magento-observer/SKILL.md
 │   ├── magento-plugin/SKILL.md
 │   └── magento-test/SKILL.md
 ├── agent-skills/                         # Multi-step agent workflows (Agent Skills format)
+│   ├── magento-agent-amqp/SKILL.md
 │   ├── magento-agent-api-builder/SKILL.md
 │   ├── magento-agent-bug-triage/SKILL.md
+│   ├── magento-agent-cache/SKILL.md
 │   ├── magento-agent-code-review/SKILL.md
 │   ├── magento-agent-deployment/SKILL.md
+│   ├── magento-agent-indexer/SKILL.md
 │   ├── magento-agent-module-generator/SKILL.md
 │   └── magento-agent-performance-auditor/SKILL.md
 ├── subagents/                            # Claude Code native subagents (isolated context)
+│   ├── magento-agent-amqp.md
 │   ├── magento-agent-api-builder.md
 │   ├── magento-agent-bug-triage.md
+│   ├── magento-agent-cache.md
 │   ├── magento-agent-code-review.md
 │   ├── magento-agent-deployment.md
+│   ├── magento-agent-indexer.md
 │   ├── magento-agent-module-generator.md
 │   └── magento-agent-performance-auditor.md
 ├── snippets/                             # Copy-pasteable XML/PHP stubs
@@ -123,12 +132,12 @@ magento-ai-toolkit/
 │   ├── new-module.md
 │   └── pr-review.md
 └── tests/
-    ├── promptfooconfig.yaml              # Root orchestrator (imports all 16 configs)
+    ├── promptfooconfig.yaml              # Root orchestrator (imports all 22 configs)
     ├── providers.yaml                    # Shared: claude-sonnet-4-6 + gpt-4o at temp=0
     ├── prompts/
     │   ├── skill-wrapper.json
     │   └── agent-wrapper.json
-    ├── skills/                           # 10 configs × 5 tests = 50 tests
+    ├── skills/                           # 13 configs × 5 tests = 65 tests
     │   ├── magento-plugin.yaml
     │   ├── magento-db-schema.yaml
     │   ├── magento-debug.yaml
@@ -138,14 +147,20 @@ magento-ai-toolkit/
     │   ├── magento-test.yaml
     │   ├── magento-api.yaml
     │   ├── magento-hyva.yaml
-    │   └── magento-infra.yaml
-    └── agents/                           # 6 configs × 5 tests = 30 tests
+    │   ├── magento-infra.yaml
+    │   ├── magento-indexer.yaml
+    │   ├── magento-cache.yaml
+    │   └── magento-amqp.yaml
+    └── agents/                           # 9 configs × 5 tests = 45 tests
         ├── magento-bug-triage.yaml
         ├── magento-code-review.yaml
         ├── magento-deployment.yaml
         ├── magento-performance-auditor.yaml
         ├── magento-api-builder.yaml
-        └── magento-module-generator.yaml
+        ├── magento-module-generator.yaml
+        ├── magento-indexer.yaml
+        ├── magento-cache.yaml
+        └── magento-amqp.yaml
 ```
 
 ---
@@ -168,6 +183,9 @@ These follow the [Agent Skills open standard](https://agentskills.io) — compat
 | [`magento-api`](skills/magento-api/SKILL.md) | REST (`webapi.xml`, SearchCriteria, auth) + GraphQL (schema, resolvers, caching) |
 | [`magento-hyva`](skills/magento-hyva/SKILL.md) | Hyvä theme — Alpine.js, Tailwind CSS, View Models, GraphQL data fetching |
 | [`magento-infra`](skills/magento-infra/SKILL.md) | Redis, RabbitMQ, OpenSearch — `env.php` config, CLI diagnostics, cloud variants |
+| [`magento-indexer`](skills/magento-indexer/SKILL.md) | Custom indexers — `indexer.xml`, `mview.xml`, `ActionInterface`, batch reindex, schedule vs realtime |
+| [`magento-cache`](skills/magento-cache/SKILL.md) | Custom cache types with `TagScope`, tag vs type invalidation, FPC rules, customer-data sections |
+| [`magento-amqp`](skills/magento-amqp/SKILL.md) | Message queues — RabbitMQ, AmazonMQ, DB adapter, all four XML configs, publishers, consumers |
 
 ---
 
@@ -185,6 +203,9 @@ These also follow the [Agent Skills open standard](https://agentskills.io) — t
 | [`magento-agent-performance-auditor`](agent-skills/magento-agent-performance-auditor/SKILL.md) | Audit 8 layers: cache, indexers, Redis, OpenSearch, DB, PHP/OPcache, static assets, queues → prioritised action plan | Run bash, read files |
 | [`magento-agent-api-builder`](agent-skills/magento-agent-api-builder/SKILL.md) | From spec: generate service contract → repository → `webapi.xml` → `acl.xml` → GraphQL schema + resolvers | Write files |
 | [`magento-agent-module-generator`](agent-skills/magento-agent-module-generator/SKILL.md) | From spec: generate complete module — bootstrap, data layer, REST API, admin UI, CLI, observers, tests | Write files |
+| [`magento-agent-indexer`](agent-skills/magento-agent-indexer/SKILL.md) | Diagnose invalid / stuck / slow indexers, mview triggering issues; or scaffold a custom indexer end-to-end | Run bash, read files, write files |
+| [`magento-agent-cache`](agent-skills/magento-agent-cache/SKILL.md) | Trace FPC bypass, Redis pressure, stale block / tag invalidation; or scaffold a custom cache type with invalidation | Run bash, read files, write files |
+| [`magento-agent-amqp`](agent-skills/magento-agent-amqp/SKILL.md) | Diagnose queue backlog, stuck / killed consumers, AMQP connectivity, DLQ overflow; or scaffold a complete queue topology end-to-end | Run bash, read files, write files |
 
 ---
 
@@ -194,10 +215,13 @@ The `subagents/` directory contains **Claude Code native agents** — single `.m
 
 ```
 subagents/
+├── magento-agent-amqp.md              # auto-delegated for queue / consumer / broker diagnosis and scaffolding
 ├── magento-agent-api-builder.md       # auto-delegated for API/GraphQL generation tasks
 ├── magento-agent-bug-triage.md        # auto-delegated for debugging/error analysis
+├── magento-agent-cache.md             # auto-delegated for cache / FPC / Redis investigations
 ├── magento-agent-code-review.md       # auto-delegated for code review requests
 ├── magento-agent-deployment.md        # auto-delegated for deployment tasks
+├── magento-agent-indexer.md           # auto-delegated for indexer / mview diagnosis and scaffolding
 ├── magento-agent-module-generator.md  # auto-delegated for module scaffolding
 └── magento-agent-performance-auditor.md  # auto-delegated for performance audits
 ```
@@ -220,6 +244,14 @@ These are equivalent in content to the agent-skills but formatted for Claude Cod
 | "Why is the store slow?" | Agent skill / Subagent: `magento-agent-performance-auditor` |
 | "Create a REST API for entity X" | Agent skill / Subagent: `magento-agent-api-builder` |
 | "Write a Hyvä Alpine.js component" | Skill: `magento-hyva` |
+| "Build a custom indexer for entity X" | Skill: `magento-indexer` or Agent skill: `magento-agent-indexer` |
+| "My indexer is stuck / invalid / slow" | Agent skill / Subagent: `magento-agent-indexer` |
+| "Create a custom cache type" | Skill: `magento-cache` or Agent skill: `magento-agent-cache` |
+| "FPC isn't caching / stale data persists" | Agent skill / Subagent: `magento-agent-cache` |
+| "Set up a RabbitMQ / AmazonMQ / DB queue" | Skill: `magento-amqp` or Agent skill: `magento-agent-amqp` |
+| "Queue backlog growing / consumer not draining" | Agent skill / Subagent: `magento-agent-amqp` |
+| "Consumer keeps crashing / hitting OOM" | Agent skill / Subagent: `magento-agent-amqp` |
+| "AmazonMQ / RabbitMQ connection errors" | Agent skill / Subagent: `magento-agent-amqp` |
 
 | Format | Best for | Tool use? | Context |
 |--------|----------|-----------|---------|
@@ -238,9 +270,12 @@ Each agent skill lists **companion skills** — skills that cover overlapping re
 | `magento-agent-bug-triage` | `magento-debug` |
 | `magento-agent-deployment` | `magento-deploy` |
 | `magento-agent-code-review` | `magento-plugin`, `magento-observer`, `magento-db-schema`, `magento-api`, `magento-test` |
-| `magento-agent-performance-auditor` | `magento-infra`, `magento-debug` |
+| `magento-agent-performance-auditor` | `magento-infra`, `magento-debug`, `magento-cache`, `magento-indexer` |
 | `magento-agent-api-builder` | `magento-api` |
 | `magento-agent-module-generator` | `magento-db-schema`, `magento-api`, `magento-cli-command`, `magento-plugin`, `magento-observer`, `magento-test`, `magento-hyva` |
+| `magento-agent-indexer` | `magento-indexer` |
+| `magento-agent-cache` | `magento-cache`, `magento-infra` |
+| `magento-agent-amqp` | `magento-amqp`, `magento-infra` |
 
 ---
 
@@ -313,7 +348,7 @@ Human-run workflow gates in `checklists/`. Use these at key project milestones �
 
 ## Testing
 
-The test suite uses [promptfoo](https://promptfoo.dev) to validate all 16 skills and agent skills against Claude and GPT-4o. 80 test cases × 2 providers = ~160 API calls per full run.
+The test suite uses [promptfoo](https://promptfoo.dev) to validate all 22 skills and agent skills against Claude and GPT-4o. 110 test cases × 2 providers = ~220 API calls per full run.
 
 ### Prerequisites
 
@@ -326,12 +361,12 @@ OPENAI_API_KEY=...    # optional — omit to run single-provider with Claude onl
 ### Run commands
 
 ```bash
-# All 80 cases, both providers (~160 API calls)
+# All 110 cases, both providers (~220 API calls)
 npm test
 
 # By category
-npm run test:skills           # all 10 skill configs
-npm run test:agents           # all 6 agent skill configs
+npm run test:skills           # all 13 skill configs
+npm run test:agents           # all 9 agent skill configs
 
 # Per-file (fast iteration during authoring)
 npm run test:plugin
@@ -350,6 +385,12 @@ npm run test:deployment
 npm run test:performance
 npm run test:api-builder
 npm run test:module-generator
+npm run test:indexer
+npm run test:cache
+npm run test:amqp
+npm run test:agent-indexer
+npm run test:agent-cache
+npm run test:agent-amqp
 
 # CI / reporting
 npm run test:ci               # outputs results-skills.json + results-agents.json
@@ -387,6 +428,12 @@ Non-negotiable assertions enforced on every test in a config via `defaultTest`:
 | `magento-performance-auditor` | `## Performance Audit Report` always present |
 | `magento-api-builder` | `## API Builder` always present; `ObjectManager::getInstance` never appears |
 | `magento-module-generator` | `InstallSchemaInterface`, `UpgradeSchemaInterface`, `ObjectManager::getInstance` never appear |
+| `magento-indexer` | `ObjectManager::getInstance` never appears; `insertMultiple` used in batch scenarios |
+| `magento-cache` | `ObjectManager::getInstance` never appears; `TagScope` used as base for custom cache types |
+| `magento-amqp` | `ObjectManager::getInstance` never appears; all four queue XML files referenced |
+| `magento-agent-indexer` | `## Indexer Report` always present; `rm -rf generated` never appears |
+| `magento-agent-cache` | `## Cache Report` always present |
+| `magento-agent-amqp` | `## AMQP Report` always present; `ObjectManager::getInstance` never appears; all four queue XML files referenced in scaffold responses |
 
 ---
 

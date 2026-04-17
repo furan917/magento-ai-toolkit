@@ -1,0 +1,155 @@
+import:
+  - ../promptfooconfig.yaml
+
+description: Tests for agents/magento-agent-indexer.md
+
+prompts:
+  - file://../prompts/agent-wrapper.json
+
+providers:
+  - file://../providers.yaml
+
+defaultTest:
+  assert:
+    - type: latency
+      threshold: 150000
+    - type: javascript
+      value: "output.trim().length > 50"
+
+tests:
+  - description: "Report sections present; indexer:status checked first; all fields populated"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-indexer/SKILL.md"
+      user_input: >
+        My Magento catalog_product_price indexer has been showing as 'invalid' for
+        two days even after I run cache:flush. Products are showing the wrong prices
+        on the frontend. Please diagnose this.
+    assert:
+      - type: contains
+        value: "## Indexer Report"
+      - type: contains
+        value: "**Mode**"
+      - type: contains
+        value: "**Root Cause"
+      - type: contains
+        value: "**Investigated**"
+      - type: contains
+        value: "**Verification**"
+      # indexer:status must be part of the investigation
+      - type: contains
+        value: "indexer:status"
+      # The fix must include the correct reindex command
+      - type: contains
+        value: "indexer:reindex"
+      - type: llm-rubric
+        value: >
+          The Indexer Report includes all required sections (Mode, Investigated, Root
+          Cause, Fix/Implementation, Verification). The Investigated section references
+          running bin/magento indexer:status as a first step. The Root Cause identifies
+          why the indexer is invalid (not just restates the symptom). The Fix includes
+          the correct reindex command for catalog_product_price.
+
+  - description: "Stuck working state diagnosed with indexer:reset, not rm -rf generated"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-indexer/SKILL.md"
+      user_input: >
+        My catalogsearch_fulltext indexer has been stuck in 'working' status for
+        6 hours. No reindex process appears to be running. How do I fix this?
+    assert:
+      - type: contains
+        value: "## Indexer Report"
+      - type: contains
+        value: "**Root Cause"
+      - type: contains
+        value: "**Investigated**"
+      - type: contains
+        value: "**Verification**"
+      # indexer:reset is the correct fix for a stuck lock
+      - type: contains
+        value: "indexer:reset"
+      # rm -rf generated is always wrong here
+      - type: not-contains
+        value: "rm -rf generated"
+      - type: llm-rubric
+        value: >
+          The Indexer Report identifies the root cause as a stale indexer lock from a
+          previously killed reindex process. It recommends bin/magento indexer:reset
+          to release the lock and then bin/magento indexer:reindex to rebuild.
+          It does not suggest deleting the generated/ directory.
+
+  - description: "Mview not triggering: view_id mismatch and missing table subscription diagnosed"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-indexer/SKILL.md"
+      user_input: >
+        I created a custom indexer in schedule mode but it never runs incrementally.
+        Products are saved but the changelog table stays empty. My indexer.xml has
+        view_id="vendor_module_custom" and my mview.xml has id="vendor_module_index".
+        Please diagnose.
+    assert:
+      - type: contains
+        value: "## Indexer Report"
+      - type: contains
+        value: "**Root Cause"
+      - type: contains
+        value: "**Investigated**"
+      - type: contains
+        value: "**Verification**"
+      # Must identify the mismatch
+      - type: regex
+        value: "view_id|mview.xml|mismatch|id.*match|match.*id"
+      - type: llm-rubric
+        value: >
+          The Indexer Report identifies the root cause as a view_id mismatch: the
+          view_id in indexer.xml ("vendor_module_custom") does not match the id in
+          mview.xml ("vendor_module_index"), which breaks the link between the mview
+          changelog and the indexer. The Fix recommends correcting one or both IDs
+          so they match exactly, then running setup:upgrade.
+
+  - description: "Custom indexer scaffold generates all required files with correct patterns"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-indexer/SKILL.md"
+      user_input: >
+        Scaffold a custom indexer for Vendor_Module. It should watch
+        vendor_module_product_data (with column product_id) and write to a flat
+        index table vendor_module_product_index. It needs to work in schedule mode.
+    assert:
+      - type: contains
+        value: "## Indexer Report"
+      - type: contains
+        value: "declare(strict_types=1)"
+      - type: contains
+        value: "indexer.xml"
+      - type: contains
+        value: "mview.xml"
+      - type: contains
+        value: "executeFull"
+      - type: contains
+        value: "insertMultiple"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: llm-rubric
+        value: >
+          The scaffolded indexer includes indexer.xml (with view_id), mview.xml (with
+          a subscription on vendor_module_product_data using entity_column="product_id"),
+          and an Action class implementing both ActionInterface and MviewActionInterface.
+          The resource model uses insertMultiple for batch inserts. No ObjectManager
+          usage appears anywhere in the generated code.
+
+  - description: "Agent refuses to edit vendor/ files for indexer issues"
+    vars:
+      system_prompt: "file://../../agent-skills/magento-agent-indexer/SKILL.md"
+      user_input: >
+        The slow reindex is caused by inefficient SQL in
+        vendor/magento/module-catalog/Model/ResourceModel/Product/Indexer/Price/DefaultPrice.php.
+        Can you edit that file to fix it?
+    assert:
+      - type: contains
+        value: "## Indexer Report"
+      # Must suggest the correct Magento extensibility approach
+      - type: regex
+        value: "plugin|preference|override"
+      - type: llm-rubric
+        value: >
+          The agent explicitly refuses to modify vendor/ files and instead recommends
+          using a Magento preference or plugin to override or intercept the indexer
+          class, keeping the extension in app/code rather than patching vendor code.

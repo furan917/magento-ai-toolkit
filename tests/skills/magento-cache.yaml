@@ -1,0 +1,135 @@
+import:
+  - ../promptfooconfig.yaml
+
+description: Tests for skills/magento-cache.md
+
+prompts:
+  - file://../prompts/skill-wrapper.json
+
+providers:
+  - file://../providers.yaml
+
+defaultTest:
+  assert:
+    - type: latency
+      threshold: 120000
+    - type: javascript
+      value: "output.trim().length > 50"
+
+tests:
+  - description: "Custom cache type extends TagScope with TYPE_IDENTIFIER and CACHE_TAG constants"
+    vars:
+      system_prompt: "file://../../skills/magento-cache/SKILL.md"
+      user_input: >
+        Create a custom Magento 2 cache type for my Vendor_Module that stores
+        API response data. Show the cache type class and the cache.xml registration.
+    assert:
+      - type: contains
+        value: "declare(strict_types=1)"
+      # TagScope is the correct base class for custom cache types
+      - type: contains
+        value: "TagScope"
+      # TYPE_IDENTIFIER constant links class to cache.xml
+      - type: contains
+        value: "TYPE_IDENTIFIER"
+      # CACHE_TAG constant enables targeted invalidation
+      - type: contains
+        value: "CACHE_TAG"
+      - type: contains
+        value: "cache.xml"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: llm-rubric
+        value: >
+          The cache type class extends TagScope (not Magento\Framework\Cache\Core directly),
+          declares TYPE_IDENTIFIER and CACHE_TAG as public constants, and passes
+          $cacheFrontendPool->get(self::TYPE_IDENTIFIER) to the parent constructor.
+          The cache.xml file has a type element whose name attribute matches TYPE_IDENTIFIER.
+
+  - description: "Cache save uses SerializerInterface, not json_encode; load checks false"
+    vars:
+      system_prompt: "file://../../skills/magento-cache/SKILL.md"
+      user_input: >
+        Show me how to save and load data from a custom cache type in Magento 2,
+        including how to check for a cache miss.
+    assert:
+      - type: contains
+        value: "declare(strict_types=1)"
+      # SerializerInterface is the correct approach, not json_encode
+      - type: regex
+        value: "SerializerInterface|serializer"
+      # cache:load returns false on miss — must check for false, not null
+      - type: regex
+        value: "!== false|=== false"
+      - type: not-contains
+        value: "ObjectManager::getInstance"
+      - type: llm-rubric
+        value: >
+          The cache save uses SerializerInterface::serialize (not json_encode). The cache
+          load result is checked against false (not null or empty string) to correctly
+          identify a cache miss. The cache save call includes a cache tag array and
+          a lifetime parameter.
+
+  - description: "cacheable=false warned against; customer-data section recommended instead"
+    vars:
+      system_prompt: "file://../../skills/magento-cache/SKILL.md"
+      user_input: >
+        I need to show personalised content (e.g. customer name and cart count) on a
+        cached product page. Should I set cacheable="false" on the block?
+    assert:
+      # Must warn that cacheable=false disables FPC for the whole page
+      - type: regex
+        value: "cacheable.*false|full.?page.?cache|entire page"
+      # Must recommend customer-data or sections as the correct approach
+      - type: regex
+        value: "customer.?data|sections|private.?content|customerData"
+      - type: llm-rubric
+        value: >
+          The response explicitly warns that cacheable="false" on any block disables
+          full-page cache for the entire page, not just that block. It recommends using
+          Magento's customer-data section mechanism (sections.xml) to load personalised
+          content via JavaScript after the cached page is served, keeping FPC intact.
+
+  - description: "cache:clean distinguished from cache:flush — flush warned against in production"
+    vars:
+      system_prompt: "file://../../skills/magento-cache/SKILL.md"
+      user_input: >
+        After saving a product the old price is still showing. What is the correct way
+        to clear the cache in production?
+    assert:
+      # cache:clean is the safe choice
+      - type: contains
+        value: "cache:clean"
+      # Must explain difference: clean removes invalidated entries, flush removes all
+      - type: regex
+        value: "flush|flushall|cache:flush"
+      - type: llm-rubric
+        value: >
+          The response recommends cache:clean (which removes only invalidated entries)
+          rather than cache:flush (which removes all entries including valid ones and
+          causes a cold-cache spike). It explains that the price display issue is more
+          likely caused by the catalog_product_price indexer being invalid rather than
+          a cache problem, and suggests checking indexer status first.
+
+  - description: "Custom cache type requires setup:upgrade to register; getCacheKeyInfo returns unique key"
+    vars:
+      system_prompt: "file://../../skills/magento-cache/SKILL.md"
+      user_input: >
+        I added a custom cache type but it doesn't appear in bin/magento cache:status.
+        Also, how do I make a block cache vary by store ID and customer group?
+    assert:
+      # setup:upgrade required to register new cache type
+      - type: contains
+        value: "setup:upgrade"
+      # Block cache varies via getCacheKeyInfo
+      - type: contains
+        value: "getCacheKeyInfo"
+      # Store ID and customer group are key variation factors
+      - type: regex
+        value: "store|storeId|store_id"
+      - type: llm-rubric
+        value: >
+          The response explains that after adding cache.xml, bin/magento setup:upgrade
+          must be run to register the new cache type before it appears in cache:status.
+          It also shows getCacheKeyInfo() returning an array that includes store ID
+          (and optionally customer group) to create unique cache entries per variation.
